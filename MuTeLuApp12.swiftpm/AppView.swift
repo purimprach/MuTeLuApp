@@ -97,6 +97,9 @@ struct AppView: View {
             
         case .wishDetail:
             WishDetailView()
+        
+        case .knowledgeOfferings, .knowledgeNumbers, .knowledgeBuddhistPrinciples:
+            ComingSoonView()
             
         case .adminLogin:
             AdminLoginView()
@@ -114,6 +117,9 @@ struct AppView: View {
             OfferingGameView()
                 .environmentObject(language)
                 .environmentObject(flowManager)
+            
+        case .gameQuiz, .gameMeditation, .gameMatching:
+            ComingSoonView()
             
         case .bookmarks: 
             BookmarkView()

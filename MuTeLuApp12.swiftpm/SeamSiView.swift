@@ -4,14 +4,23 @@ import AVFoundation
 struct SeamSiView: View {
     @EnvironmentObject var language: AppLanguage
     @State private var isShaking = false
-    @State private var stickOffset: CGFloat = -200
     @State private var showResult = false
     @State private var selectedFortune: SeamSiFortune?
     @State private var fortuneNumber: Int?
     
+    // State สำหรับ Animation ของไม้เซียมซี
+    @State private var stickRotation: Double = 0
+    @State private var stickOffsetY: CGFloat = 0
+    
     var body: some View {
         ZStack {
-            Color(.systemGroupedBackground).ignoresSafeArea()
+            // MARK: - 1. เพิ่มพื้นหลังไล่ระดับสี
+            LinearGradient(
+                colors: [Color.red.opacity(0.2), Color.yellow.opacity(0.2), Color.gray.opacity(0.1)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
             
             VStack(spacing: 20) {
                 BackButton()
@@ -20,73 +29,110 @@ struct SeamSiView: View {
                     .font(.largeTitle)
                     .fontWeight(.bold)
                 
+                Spacer()
+                
+                // MARK: - 2. ปรับปรุง Animation ของไม้เซียมซี
                 ZStack {
-                    Image("seamsi_background") // ภาพตกแต่งไม้เซียมซีในกระบอก (หากมี)
+                    // กระบอกเซียมซี (ใช้ SF Symbol แทน)
+                    Image(systemName: "cylinder.fill")
                         .resizable()
                         .scaledToFit()
-                        .frame(height: 200)
+                        .frame(height: 250)
+                        .foregroundStyle(Color.red.gradient.opacity(0.8))
+                        .rotation3DEffect(.degrees(isShaking ? 5 : -5), axis: (x: 0, y: 1, z: 0))
+                        .animation(.easeInOut(duration: 0.1).repeatCount(12, autoreverses: true), value: isShaking)
                     
-                    Image("stick") // ไม้เซียมซีเด้งขึ้น
-                        .resizable()
-                        .frame(width: 40, height: 100)
-                        .offset(y: stickOffset)
-                        .rotationEffect(.degrees(isShaking ? 10 : -10))
-                        .animation(.easeInOut(duration: 0.2).repeatCount(5, autoreverses: true), value: isShaking)
-                        .opacity(showResult ? 1 : 0)
+                    // ไม้เซียมซีที่ตกออกมา
+                    if showResult {
+                        Image(systemName: "line.diagonal")
+                            .font(.system(size: 120, weight: .heavy))
+                            .foregroundStyle(Color.yellow.gradient)
+                            .shadow(color: .black.opacity(0.2), radius: 3, y: 3)
+                            .rotationEffect(.degrees(stickRotation))
+                            .offset(y: stickOffsetY)
+                            .transition(.offset(y: -200).combined(with: .opacity))
+                            .onAppear {
+                                withAnimation(.easeOut(duration: 0.6)) {
+                                    stickRotation = Double.random(in: 80...100)
+                                    stickOffsetY = 150
+                                }
+                            }
+                    }
                 }
                 
-                Button {
-                    playSound("shake.mp3")
-                    withAnimation {
-                        isShaking = true
-                        showResult = false
-                        stickOffset = -200
-                    }
-                    
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                        isShaking = false
-                        let index = Int.random(in: 1...25)
-                        selectedFortune = seamSiFortunes[index - 1]
-                        fortuneNumber = index
-                        stickOffset = 0
-                        showResult = true
-                        playSound("drop.mp3")
-                    }
-                } label: {
-                    Text(language.localized("เขย่าเซียมซี", "Shake the Sticks"))
-                        .fontWeight(.semibold)
-                        .foregroundColor(.white)
-                        .padding()
-                        .frame(width: 200)
-                        .background(Color.red)
-                        .cornerRadius(12)
-                }
+                Spacer()
                 
+                // MARK: - 3. แสดงผลลัพธ์ในกรอบที่สวยขึ้น
                 if showResult, let fortune = selectedFortune, let number = fortuneNumber {
-                    VStack(spacing: 10) {
+                    VStack(spacing: 12) {
                         Text(language.localized("ใบที่ \(number)", "No. \(number)"))
-                            .font(.headline)
-                            .foregroundColor(.secondary)
+                            .font(.title2.bold())
+                            .foregroundColor(.primary)
                         
                         Text(language.localized(fortune.th, fortune.en))
                             .multilineTextAlignment(.center)
                             .font(.body)
                             .padding()
+                            .frame(maxWidth: .infinity)
                             .background(.ultraThinMaterial)
-                            .cornerRadius(16)
-                            .shadow(radius: 4)
-                            .padding(.horizontal)
+                            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                            .shadow(color: .black.opacity(0.3), radius: 10, y: 5)
                     }
-                    .transition(.slide.combined(with: .opacity))
+                    .padding(.horizontal)
+                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
                 }
                 
                 Spacer()
+                
+                // MARK: - 4. ปรับปรุงปุ่มกด
+                Button {
+                    shakeSticks()
+                } label: {
+                    Label(language.localized("เขย่าเซียมซี", "Shake the Sticks"), systemImage: "wave.3.forward")
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                        .padding()
+                        .frame(maxWidth: 300)
+                        .background(Color.red.gradient)
+                        .cornerRadius(20)
+                        .shadow(color: .red.opacity(0.4), radius: 8, y: 4)
+                        .scaleEffect(isShaking ? 1.05 : 1.0)
+                }
+                .disabled(isShaking) // ป้องกันการกดซ้ำขณะเขย่า
+                
+                Spacer(minLength: 20)
             }
             .padding()
         }
     }
     
+    // MARK: - Functions
+    
+    func shakeSticks() {
+        // Reset ค่าก่อนเริ่ม
+        withAnimation {
+            showResult = false
+            isShaking = true
+        }
+        
+        playSound("shake.mp3") // (สมมติว่าคุณมีไฟล์เสียงนี้)
+        
+        // หลังจากเขย่าเสร็จ
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+            let index = Int.random(in: 1...25)
+            selectedFortune = seamSiFortunes[index - 1]
+            fortuneNumber = index
+            
+            withAnimation {
+                isShaking = false
+                showResult = true
+            }
+            playSound("drop.mp3") // (สมมติว่าคุณมีไฟล์เสียงนี้)
+        }
+    }
+    
     func playSound(_ name: String) {
+        // ฟังก์ชันนี้เหมือนเดิม
         guard let url = Bundle.main.url(forResource: name, withExtension: nil) else { return }
         var player: AVAudioPlayer?
         player = try? AVAudioPlayer(contentsOf: url)

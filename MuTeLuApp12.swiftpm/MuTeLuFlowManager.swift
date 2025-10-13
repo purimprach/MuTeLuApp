@@ -31,4 +31,10 @@ enum MuTeLuScreen {
     case offeringGame
     case bookmarks
     case categorySearch
+    case knowledgeOfferings
+    case knowledgeNumbers
+    case knowledgeBuddhistPrinciples
+    case gameQuiz
+    case gameMeditation
+    case gameMatching
 }

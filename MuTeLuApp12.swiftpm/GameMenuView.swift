@@ -5,53 +5,94 @@ struct GameMenuView: View {
     @EnvironmentObject var flowManager: MuTeLuFlowManager
     
     var body: some View {
-        ScrollView {
-            BackButton()
+        ZStack {
+            // MARK: - 1. เพิ่มพื้นหลัง
+            LinearGradient(
+                colors: [Color.gray.opacity(0.5), .clear],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+            
             VStack(spacing: 20) {
-                Text(language.localized("เกมส่งเสริมวัฒนธรรม", "Cultural Games"))
-                    .font(.title2)
-                    .bold()
-                    .padding(.top)
-                
-                // เพิ่มเกมต่างๆ ที่นี่
-                GameCard(titleTH: "จัดเครื่องสังฆทาน", titleEN: "Offering Set Arrangement", imageName: "gift.fill") {
-                    flowManager.currentScreen = .offeringGame
+                // MARK: - 2. Header
+                HStack {
+                    BackButton()
+                    Spacer()
                 }
                 
-                // เพิ่มเกมอื่นๆ ในอนาคต เช่น...
-                // GameCard(titleTH: "จำบทสวดมนต์", titleEN: "Chant Memory Game", imageName: "brain.head.profile") { ... }
-            }
-            .padding()
-        }
-    }
-}
-
-struct GameCard: View {
-    let titleTH: String
-    let titleEN: String
-    let imageName: String
-    let action: () -> Void
-    
-    @EnvironmentObject var language: AppLanguage
-    
-    var body: some View {
-        Button(action: action) {
-            HStack {
-                Image(systemName: imageName)
-                    .resizable()
-                    .frame(width: 40, height: 40)
-                    .padding()
+                Text(language.localized("เกมส่งเสริมวัฒนธรรม", "Cultural Games"))
+                    .font(.title).bold()
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(Color.black.gradient)
                 
-                Text(language.localized(titleTH, titleEN))
-                    .font(.headline)
+                // MARK: - 3. รายการเมนูเกม
+                VStack(spacing: 16) {
+                    GameCard(
+                        title: language.localized("จัดของใส่บาตร", "Offering Game"),
+                        icon: "gift.fill",
+                        screen: .offeringGame
+                    )
+                    
+                    // --- เกมใหม่ (Coming Soon) ---
+                    GameCard(
+                        title: language.localized("คำถามทดสอบศีล 5", "The Five Precepts Quiz"),
+                        icon: "questionmark.diamond.fill",
+                        screen: .gameQuiz
+                    )
+                    
+                    GameCard(
+                        title: language.localized("ฝึกสมาธิ กำหนดลมหายใจ", "Breathing Meditation"),
+                        icon: "wind",
+                        screen: .gameMeditation
+                    )
+                    
+                    GameCard(
+                        title: language.localized("จับคู่สัญลักษณ์มงคล", "Lucky Symbols Match"),
+                        icon: "squares.below.rectangle",
+                        screen: .gameMatching
+                    )
+                }
                 
                 Spacer()
             }
             .padding()
-            .background(.ultraThinMaterial)
-            .cornerRadius(12)
-            .shadow(radius: 2)
         }
     }
 }
 
+
+// VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV
+// MARK: - [แก้ไข] Component สำหรับปุ่มเมนูเกม (ใช้เวอร์ชันนี้)
+struct GameCard: View {
+    @EnvironmentObject var flowManager: MuTeLuFlowManager // 👈 ต้องมี flowManager ที่นี่
+    let title: String
+    let icon: String
+    let screen: MuTeLuScreen
+    
+    var body: some View {
+        Button(action: {
+            flowManager.currentScreen = screen // 👈 action จะถูกจัดการในนี้
+        }) {
+            HStack(spacing: 16) {
+                Image(systemName: icon)
+                    .font(.title)
+                    .foregroundStyle(Color.blue.gradient)
+                    .frame(width: 50)
+                
+                Text(title)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .foregroundColor(.secondary.opacity(1))
+            }
+            .padding()
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .shadow(color: .black.opacity(0.05), radius: 5, y: 3)
+        }
+    }
+}

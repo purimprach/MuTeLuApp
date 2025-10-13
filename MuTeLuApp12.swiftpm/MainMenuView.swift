@@ -381,7 +381,8 @@ private struct QuickActionsGrid: View {
             ("ดูดวงไพ่ทาโร่","Tarot Reading","suit.club", .tarot),
             ("เซียมซี","Fortune Sticks","scroll", .seamSi),
             ("คาถาประจำวัน","Daily Mantra","sparkles", .mantra),
-            ("เกร็ดความรู้","Knowledge","book.closed", .knowledge)
+            ("เกร็ดความรู้","Knowledge","book.closed", .knowledge),
+            ("เกมส่งเสริมวัฒนธรรม", "Cultural Games", "gift.fill", .gameMenu)
         ]
     }
     
