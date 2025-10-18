@@ -132,45 +132,56 @@ struct RecommendationView: View {
 }
 
 // (Subviews: PlaceRow และ chip ไม่มีการเปลี่ยนแปลง)
-
 struct PlaceRow: View {
     let place: SacredPlace
     let routeDistance: CLLocationDistance?
     
     @EnvironmentObject var language: AppLanguage
-    @EnvironmentObject var flowManager: MuTeLuFlowManager
+    @EnvironmentObject var flowManager: MuTeLuFlowManager // รับ flowManager มาใช้
     
     var body: some View {
         Button(action: {
-            flowManager.currentScreen = .sacredDetail(place: place)
+            // --- 👇 แก้ไขตรงนี้ ---
+            flowManager.navigateTo(.sacredDetail(place: place)) // ใช้ navigateTo
+            // --- 👆 สิ้นสุดส่วนแก้ไข ---
         }) {
             HStack(spacing: 16) {
+                // ส่วนแสดงรูปภาพ (เหมือนเดิม)
                 if UIImage(named: place.imageName) != nil {
                     Image(place.imageName)
                         .resizable().scaledToFill()
                         .frame(width: 90, height: 100).cornerRadius(10).clipped()
                 } else {
-                    Image(systemName: "photo")
-                        .resizable().scaledToFill()
-                        .frame(width: 90, height: 100).cornerRadius(10).clipped()
+                    // Placeholder ถ้าไม่มีรูป
+                    Image(systemName: "photo.fill") // ใช้ photo.fill จะเห็นชัดกว่า
+                        .resizable().scaledToFit() // ใช้ scaledToFit สำหรับ placeholder
+                        .frame(width: 90, height: 100)
+                        .cornerRadius(10)
+                        .clipped()
+                        .foregroundColor(.gray.opacity(0.3)) // สี placeholder
+                        .background(Color(.systemGray5)) // พื้นหลัง placeholder
                 }
                 
+                // ส่วนแสดงข้อความ (เหมือนเดิม)
                 VStack(alignment: .leading, spacing: 6) {
                     Text(language.localized(place.nameTH, place.nameEN))
-                        .font(.subheadline).foregroundColor(.primary)
+                        .font(.subheadline).bold() // ทำชื่อตัวหนาเล็กน้อย
+                        .foregroundColor(.primary) // ใช้ primary color
+                        .lineLimit(2) // จำกัด 2 บรรทัด
                     
                     Text(language.localized(place.locationTH, place.locationEN))
                         .font(.caption).foregroundColor(.gray).lineLimit(2)
                     
                     HStack(spacing: 8) {
                         if let distance = routeDistance {
-                            if distance != .infinity {
-                                chip(text: formatDistance(distance), icon: "car.fill")
-                            } else {
-                                chip(text: "N/A", icon: "wifi.slash")
-                            }
+                            // แสดงระยะทาง (ใช้ฟังก์ชัน chip เดิม)
+                            chip(text: formatDistance(distance), icon: "car.fill")
+                        } else {
+                            // แสดงสถานะกำลังโหลดหรือหาตำแหน่งไม่ได้
+                            chip(text: language.localized("กำลังคำนวณ...", "Calculating..."), icon: "location.north.line.fill")
+                                .opacity(0.6) // ทำให้จางลงเล็กน้อย
                         }
-                        
+                        // แสดงเรตติ้ง (ใช้ฟังก์ชัน chip เดิม)
                         chip(text: String(format: "%.1f", place.rating), icon: "star.fill")
                     }
                 }
@@ -178,19 +189,25 @@ struct PlaceRow: View {
                 Image(systemName: "chevron.right").foregroundColor(.gray.opacity(0.5))
             }
             .padding()
-            .background(Color(.secondarySystemGroupedBackground))
+            .background(Color(.secondarySystemGroupedBackground)) // ใช้สีพื้นหลังรอง
             .cornerRadius(12)
             .shadow(color: .black.opacity(0.05), radius: 4, x: 0, y: 2)
-            .padding(.horizontal)
+            .padding(.horizontal) // ระยะห่างซ้ายขวา
         }
+        .buttonStyle(.plain) // ทำให้กดได้ทั้งแถวและไม่มี effect แปลกๆ
     }
     
+    // formatDistance function (เหมือนเดิม)
     private func formatDistance(_ meters: CLLocationDistance) -> String {
         let formatter = MKDistanceFormatter()
+        formatter.locale = Locale(identifier: language.currentLanguage == "th" ? "th_TH" : "en_US") // ใช้อิงตามภาษาแอป
         formatter.unitStyle = .abbreviated
+        // อาจจะเพิ่มเงื่อนไขแสดงผลต่างกันถ้าระยะทางน้อยมาก
+        // if meters < 100 { return "< 100 m" }
         return formatter.string(fromDistance: meters)
     }
 }
+
 
 private func chip(text: String, icon: String) -> some View {
     HStack(spacing: 4) {

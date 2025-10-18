@@ -91,7 +91,7 @@ struct ProfileView: View {
                 Section {
                     // 1. ปุ่ม "สถานที่ที่บันทึกไว้"
                     Button(action: {
-                        flowManager.currentScreen = .bookmarks
+                        flowManager.navigateTo(.bookmarks)
                     }) {
                         // ทำให้เหมือนแถวใน List และมี > ด้านหลัง
                         HStack {
@@ -136,7 +136,7 @@ struct ProfileView: View {
                 .alert(language.localized("ยืนยันการออกจากระบบ", "Confirm Logout"), isPresented: $showLogoutAlert) {
                     Button(language.localized("ยืนยัน", "Confirm"), role: .destructive) {
                         flowManager.isLoggedIn = false
-                        flowManager.currentScreen = .login
+                        flowManager.navigateTo(.login)
                     }
                     Button(language.localized("ยกเลิก", "Cancel"), role: .cancel) {}
                 }

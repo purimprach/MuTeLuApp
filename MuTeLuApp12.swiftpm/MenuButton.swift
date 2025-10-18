@@ -15,7 +15,9 @@ struct MenuButton: View {
             isPressed = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                 isPressed = false
-                flowManager.currentScreen = screen
+                // --- 👇 แก้ไขบรรทัดนี้ ---
+                flowManager.navigateTo(screen) // เปลี่ยนมาใช้ navigateTo
+                // --- 👆 สิ้นสุดส่วนแก้ไข ---
             }
         }) {
             VStack(spacing: 12) {
@@ -38,9 +40,7 @@ struct MenuButton: View {
             }
             .padding()
             .frame(maxWidth: .infinity, minHeight: 150)
-            // --- 👇 แก้ไขบรรทัดนี้ ---
             .background(Color(.secondarySystemBackground))
-            // --------------------
             .cornerRadius(20)
             .shadow(color: .black.opacity(0.15), radius: 10, x: 0, y: 5)
             .scaleEffect(isPressed ? 0.97 : 1.0)

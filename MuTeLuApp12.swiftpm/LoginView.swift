@@ -6,7 +6,7 @@ struct LoginView: View {
     @EnvironmentObject var language: AppLanguage
     @EnvironmentObject var memberStore: MemberStore
     @AppStorage("loggedInEmail") private var loggedInEmail: String = ""
-    @AppStorage("currentUserEmail") var currentUserEmail = ""
+    @AppStorage("currentUserEmail") var currentUserEmail = "" // เก็บ email ล่าสุดไว้เผื่อใช้
     
     @State private var username = ""
     @State private var password = ""
@@ -18,7 +18,7 @@ struct LoginView: View {
     @State private var greetingName = ""
     @State private var randomGreetingMessage = ""
     
-    // MARK: Greetings (TH/EN)
+    // MARK: Greetings (TH/EN) - (ส่วนนี้เหมือนเดิม)
     let greetingsTH = [
         "ขอให้วันนี้เต็มไปด้วยพลังบวก ความสุข และความสำเร็จในทุก ๆ ด้านของชีวิต",
         "ขอให้คุณพบเจอแต่สิ่งดี ๆ ทั้งโอกาสใหม่ ๆ และผู้คนที่นำพาพลังงานดีเข้ามา",
@@ -37,13 +37,13 @@ struct LoginView: View {
         "May every step you take today be guided by inspiration, joy, and confidence.",
         "Start this day with strength in your heart, and the universe will respond with endless blessings."
     ]
-    // ✅ เลือกอาร์เรย์ตามภาษาปัจจุบัน
     private var greetingsLocalized: [String] {
         language.currentLanguage == "th" ? greetingsTH : greetingsEN
     }
     
     var body: some View {
         ZStack {
+            // Background Gradient (เหมือนเดิม)
             LinearGradient(
                 gradient: Gradient(colors: [Color.purple.opacity(0.7),
                                             Color(red: 0.1, green: 0, blue: 0.3)]),
@@ -52,7 +52,7 @@ struct LoginView: View {
             .ignoresSafeArea()
             
             VStack(spacing: 15) {
-                // Language Picker
+                // Language Picker (เหมือนเดิม)
                 HStack {
                     Spacer()
                     Picker("", selection: $language.currentLanguage) {
@@ -67,7 +67,8 @@ struct LoginView: View {
                 
                 Spacer()
                 
-                Image("LogoMuTeLu")
+                // Logo and Title (เหมือนเดิม)
+                Image("LogoMuTeLu") // ตรวจสอบว่าชื่อ Image ถูกต้อง
                     .resizable().scaledToFill()
                     .frame(width: 130, height: 130)
                     .clipShape(Circle())
@@ -82,14 +83,14 @@ struct LoginView: View {
                 Text(language.localized("แอปสายมูสำหรับคุณ", "A spiritual guide for you"))
                     .font(.headline).foregroundColor(.white.opacity(0.85))
                 
-                // Email
+                // Email Input (เหมือนเดิม)
                 HStack {
                     Image(systemName: "person.fill")
                         .foregroundColor(.gray)
                     TextField(language.localized("อีเมล", "Email"), text: $username)
                         .textFieldStyle(.plain)
-                        .keyboardType(.emailAddress)                 // ✅ ใช้คีย์บอร์ดอีเมล
-                        .textInputAutocapitalization(.never)         // ✅ แทน .autocapitalization(.none)
+                        .keyboardType(.emailAddress)
+                        .textInputAutocapitalization(.never)
                         .autocorrectionDisabled(true)
                 }
                 .padding()
@@ -98,7 +99,7 @@ struct LoginView: View {
                 .shadow(radius: 1)
                 .padding(.horizontal)
                 
-                // Password
+                // Password Input (เหมือนเดิม)
                 HStack {
                     Image(systemName: "lock.fill")
                         .foregroundColor(.gray)
@@ -111,7 +112,7 @@ struct LoginView: View {
                 .shadow(radius: 1)
                 .padding(.horizontal)
                 
-                // Login Button
+                // Login Button (เหมือนเดิม)
                 Button(action: handleLogin) {
                     Label(language.localized("เข้าสู่ระบบ", "Login"), systemImage: "arrow.right.circle.fill")
                         .font(.headline)
@@ -123,12 +124,13 @@ struct LoginView: View {
                 }
                 .padding(.horizontal)
                 .disabled(username.trimmingCharacters(in: .whitespaces).isEmpty ||
-                          password.trimmingCharacters(in: .whitespaces).isEmpty)  // ✅ กันกดตอนว่าง
+                          password.trimmingCharacters(in: .whitespaces).isEmpty)
                 
                 // Register Button
                 Button {
-                    flowManager.currentScreen = .registration
-                    // (แนะนำ: อย่า set isLoggedIn = true ตรงนี้ ถ้ายังไม่ได้สมัครจริง)
+                    // --- 👇 จุดแก้ไขที่ 2 ---
+                    flowManager.navigateTo(.registration) // ใช้ navigateTo
+                    // --- 👆 สิ้นสุดส่วนแก้ไข ---
                 } label: {
                     Text(language.localized("ยังไม่ได้เป็นสมาชิก กดที่นี่", "Not a member yet? Tap here."))
                         .font(.footnote)
@@ -136,20 +138,32 @@ struct LoginView: View {
                         .underline()
                 }
                 
+                // Admin Login Button
                 Button(language.localized("< ระบบผู้ดูแล >", "< Admin > Login")) {
-                    flowManager.currentScreen = .adminLogin
+                    // --- 👇 จุดแก้ไขที่ 3 ---
+                    flowManager.navigateTo(.adminLogin) // ใช้ navigateTo
+                    // --- 👆 สิ้นสุดส่วนแก้ไข ---
                 }
                 .font(.caption)
                 .foregroundColor(.white)
                 
                 Spacer()
             }
-            .blur(radius: showGreetingPopup ? 3 : 0)
+            .blur(radius: showGreetingPopup ? 3 : 0) // Blur background when popup shows
             
-            // Greeting Popup
+            // Greeting Popup (เหมือนเดิม)
             if showGreetingPopup {
                 ZStack {
-                    Color.black.opacity(0.3).ignoresSafeArea()
+                    // Dimmed background
+                    Color.black.opacity(0.4).ignoresSafeArea()
+                        .onTapGesture { // Allow tapping background to dismiss
+                            withAnimation { showGreetingPopup = false }
+                            // Optionally navigate immediately or wait
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                flowManager.isLoggedIn = true
+                                // No need to navigate here if handleLogin already did
+                            }
+                        }
                     
                     VStack(spacing: 16) {
                         Text("🎉").font(.system(size: 50))
@@ -158,7 +172,6 @@ struct LoginView: View {
                             .font(.title2).fontWeight(.bold)
                             .multilineTextAlignment(.center)
                         
-                        // ✅ ข้อความต้อนรับใช้จากอาร์เรย์ที่สุ่มแล้ว (ไม่ต้อง .localized ซ้ำ)
                         Text(randomGreetingMessage)
                             .font(.body)
                             .foregroundColor(.secondary)
@@ -168,10 +181,11 @@ struct LoginView: View {
                             withAnimation { showGreetingPopup = false }
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                 flowManager.isLoggedIn = true
-                                flowManager.currentScreen = .home
+                                // Navigation is handled in handleLogin, no need to repeat
                             }
                         }) {
                             Text(language.localized("ตกลง", "OK"))
+                                .fontWeight(.bold) // ทำให้ปุ่มเด่นขึ้น
                                 .frame(maxWidth: .infinity)
                                 .padding()
                                 .background(Color.purple)
@@ -179,24 +193,30 @@ struct LoginView: View {
                                 .cornerRadius(12)
                         }
                     }
-                    .padding()
+                    .padding(EdgeInsets(top: 30, leading: 20, bottom: 20, trailing: 20)) // Adjust padding
                     .frame(minWidth: 280, maxWidth: 400)
-                    .background(.ultraThinMaterial)
+                    .background(.ultraThinMaterial) // Use material for modern look
                     .cornerRadius(25)
                     .shadow(color: .black.opacity(0.2), radius: 20, x: 0, y: 10)
-                    .padding()
+                    .padding() // Padding around the popup
                     .transition(.move(edge: .bottom).combined(with: .opacity))
-                    .zIndex(2)
+                    .zIndex(2) // Ensure popup is on top
                 }
             }
         }
-        .animation(.spring(), value: showGreetingPopup)
-        .alert(isPresented: $showErrorAlert) {
+        .animation(.spring(), value: showGreetingPopup) // Animate popup appearance
+        .alert(isPresented: $showErrorAlert) { // Error Alert (เหมือนเดิม)
             Alert(
                 title: Text(language.localized("เกิดข้อผิดพลาด", "Error")),
                 message: Text(errorMessage),
                 dismissButton: .default(Text(language.localized("ตกลง", "OK")))
             )
+        }
+        // เติม email ล่าสุดที่เคย login ถ้ามี
+        .onAppear {
+            if !currentUserEmail.isEmpty && username.isEmpty {
+                username = currentUserEmail
+            }
         }
     }
     
@@ -206,23 +226,26 @@ struct LoginView: View {
         let trimmedEmail = username.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let trimmedPassword = password.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        // ค้นหาอีเมล
         if let index = memberStore.members.firstIndex(where: { $0.email.lowercased() == trimmedEmail }) {
             let matched = memberStore.members[index]
             
-            // เทียบรหัสผ่าน (เก็บเป็น hash)
             if matched.password == hashPassword(trimmedPassword) {
-                // ✅ อัปเดตเวลา login ล่าสุด
-                memberStore.members[index].lastLogin = Date()
+                // อัปเดตข้อมูล login
+                memberStore.recordLogin(email: matched.email) // ใช้ฟังก์ชัน recordLogin ที่สร้างไว้
                 
-                currentUserEmail = matched.email
-                loggedInEmail = matched.email
+                // เก็บ email และชื่อสำหรับแสดงผล
+                currentUserEmail = matched.email // อัปเดต email ล่าสุดที่ login สำเร็จ
+                loggedInEmail = matched.email   // ตั้งค่า email ที่ login อยู่ปัจจุบัน
                 greetingName = matched.fullName
                 
-                // ✅ สุ่มข้อความต้อนรับตามภาษา
+                // สุ่มข้อความต้อนรับ
                 randomGreetingMessage = greetingsLocalized.randomElement() ?? ""
                 
+                // แสดง Popup ต้อนรับ
                 withAnimation { showGreetingPopup = true }
+                flowManager.navigateTo(.home)
+                // --- 👆 สิ้นสุดส่วนแก้ไข ---
+                
             } else {
                 errorMessage = language.localized("อีเมลหรือรหัสผ่านไม่ถูกต้อง", "Incorrect email or password")
                 showErrorAlert = true
@@ -233,8 +256,7 @@ struct LoginView: View {
         }
     }
     
-    // MARK: - Hash
-    
+    // MARK: - Hash (เหมือนเดิม)
     private func hashPassword(_ password: String) -> String {
         let data = Data(password.utf8)
         let hashed = SHA256.hash(data: data)

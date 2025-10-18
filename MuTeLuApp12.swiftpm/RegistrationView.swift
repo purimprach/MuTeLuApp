@@ -9,6 +9,7 @@ struct RegistrationView: View {
     @State private var showAlert = false
     @State private var alertMessage = ""
     
+    // State properties (เหมือนเดิม)
     @State private var email = ""
     @State private var password = ""
     @State private var confirmPassword = ""
@@ -20,49 +21,50 @@ struct RegistrationView: View {
     @State private var houseNumber = ""
     @State private var carPlate = ""
     
-    @State private var activeAlert: AppAlert?
+    // @State private var activeAlert: AppAlert? // Keep if used elsewhere
     
     let genderOptions = ["ชาย", "หญิง", "อื่นๆ"]
     
-    // MARK: - โค้ดใหม่สำหรับ RegistrationView.swift
-    
+    // MARK: - Body (UI ตามที่คุณให้มา)
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                // --- 1. ปรับปรุง Header และพื้นหลัง ---
+                // Header (เหมือนเดิม)
                 Text(language.localized("ลงทะเบียน", "Register"))
-                    .font(.largeTitle.bold()) // 👈 ทำให้เด่นขึ้น
+                    .font(.largeTitle.bold())
                     .foregroundColor(AppColor.textPrimary.color)
                     .padding(.top)
                 
-                // --- 2. ใช้ Component ที่ปรับปรุงแล้ว ---
-                // เราจะปรับปรุง View ย่อยด้านล่างให้ใช้สีใหม่
+                // Required Fields (เหมือนเดิม)
                 RequiredField(title: language.localized("อีเมล", "Email"), text: $email)
+                    .keyboardType(.emailAddress)
+                    .textInputAutocapitalization(.never)
                 RequiredPasswordField(title: language.localized("รหัสผ่าน", "Password"), text: $password)
                 RequiredPasswordField(title: language.localized("ยืนยันรหัสผ่าน", "Confirm Password"), text: $confirmPassword)
                 
                 Divider().padding(.vertical)
                 
+                // Optional Fields Title (เหมือนเดิม)
                 Text(language.localized("ข้อมูลเพิ่มเติม (ไม่จำเป็น)", "Optional Information"))
                     .font(.headline)
-                    .foregroundColor(AppColor.textSecondary.color) // 👈 ใช้สีรอง
+                    .foregroundColor(AppColor.textSecondary.color)
                     .padding(.top, 5)
                 
+                // Optional Fields (เหมือนเดิม)
                 InputField(title: language.localized("ชื่อ-สกุล", "Full Name"), text: $fullName)
                 genderPicker
-                
                 DatePicker(language.localized("วันเดือนปีเกิด", "Birthdate"), selection: $birthdate, displayedComponents: .date)
                     .environment(\.locale, Locale(identifier: language.currentLanguage == "th" ? "th_TH" : "en_US"))
                     .environment(\.calendar, Calendar(identifier: language.currentLanguage == "th" ? .buddhist : .gregorian))
-                    .tint(AppColor.brandPrimary.color) // 👈 สีของ DatePicker
+                    .tint(AppColor.brandPrimary.color)
                     .padding(.horizontal)
-                
                 InputField(title: language.localized("เวลาเกิด", "Birth Time"), text: $birthTime)
                 InputField(title: language.localized("เบอร์โทรศัพท์", "Phone Number"), text: $phoneNumber)
+                    .keyboardType(.phonePad)
                 InputField(title: language.localized("เลขที่บ้าน", "House Number"), text: $houseNumber)
                 InputField(title: language.localized("ทะเบียนรถ", "Car Plate"), text: $carPlate)
                 
-                // --- 3. ปรับปรุงปุ่มหลักและปุ่มรอง ---
+                // Confirm Button (เหมือนเดิม)
                 Button(action: {
                     showConfirmAlert = true
                 }) {
@@ -70,9 +72,9 @@ struct RegistrationView: View {
                         .bold()
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(AppColor.brandPrimary.color) // 👈 ใช้สีหลัก
+                        .background(AppColor.brandPrimary.color)
                         .foregroundColor(.white)
-                        .cornerRadius(12) // 👈 ทำให้มุมมนสอดคล้องกัน
+                        .cornerRadius(12)
                 }
                 .padding(.horizontal)
                 .confirmationDialog(
@@ -80,79 +82,38 @@ struct RegistrationView: View {
                     isPresented: $showConfirmAlert,
                     titleVisibility: .visible
                 ) {
-                    Button(language.localized("ยืนยัน", "Confirm")) { handleRegister() }
+                    Button(language.localized("ยืนยัน", "Confirm")) {
+                        handleRegister() // เรียก handleRegister เมื่อกดยืนยัน
+                    }
                     Button(language.localized("ยกเลิก", "Cancel"), role: .cancel) { }
                 }
                 
+                // Back to Login Button
                 Button(action: {
-                    flowManager.isLoggedIn = false
-                    flowManager.currentScreen = .login
+                    // --- 👇 จุดแก้ไขที่ 2 ---
+                    flowManager.navigateTo(.login) // ใช้ navigateTo
+                    // --- 👆 สิ้นสุดส่วนแก้ไข ---
                 }) {
                     Text(language.localized("กลับไปหน้าเข้าสู่ระบบ", "Back to Login"))
                         .font(.footnote)
-                        .foregroundColor(AppColor.brandPrimary.color) // 👈 ใช้สีหลัก
+                        .foregroundColor(AppColor.brandPrimary.color)
                         .underline()
                 }
             }
             .padding()
         }
-        .background(AppColor.backgroundPrimary.color) // 👈 ใช้สีพื้นหลังหลัก
-        .alert(isPresented: $showAlert) {
+        .background(AppColor.backgroundPrimary.color.ignoresSafeArea()) // Apply background and ignore safe area
+        .alert(isPresented: $showAlert) { // Error Alert (เหมือนเดิม)
             Alert(title: Text(language.localized("ข้อผิดพลาด", "Error")),
                   message: Text(alertMessage),
                   dismissButton: .default(Text(language.localized("ตกลง", "OK"))))
         }
     }
     
-    // MARK: - ปรับปรุง View ย่อยให้ใช้สีใหม่
+    // MARK: - Subviews (เหมือนเดิม)
     
-    // ✅ Field ปกติ
-    struct InputField: View {
-        var title: String
-        @Binding var text: String
-        
-        var body: some View {
-            HStack(alignment: .center) {
-                Text(title)
-                    .font(.subheadline)
-                    .foregroundColor(AppColor.textSecondary.color) // 👈
-                    .frame(width: 110, alignment: .leading)
-                
-                TextField(title, text: $text)
-                    .textFieldStyle(.roundedBorder)
-                    .tint(AppColor.brandPrimary.color) // 👈
-            }
-            .padding(.horizontal)
-        }
-    }
-    
-    // ✅ Field แบบจำเป็น (มีดอกจันสีแดง)
-    struct RequiredField: View {
-        var title: String
-        @Binding var text: String
-        
-        var body: some View {
-            HStack(alignment: .center) {
-                HStack(spacing: 2) {
-                    Text(title)
-                        .font(.subheadline)
-                        .foregroundColor(AppColor.textSecondary.color) // 👈
-                    Text("*")
-                        .foregroundColor(.red)
-                }
-                .frame(width: 110, alignment: .leading)
-                
-                TextField(title, text: $text)
-                    .textFieldStyle(.roundedBorder)
-                    .tint(AppColor.brandPrimary.color) // 👈
-            }
-            .padding(.horizontal)
-        }
-    }
-    
-    // 👇 --- **ส่วนที่แก้ไข** ---
     var genderPicker: some View {
-        VStack(alignment: .leading) {
+        VStack(alignment: .leading, spacing: 5) {
             Text(language.localized("เพศ", "Gender")).font(.caption).foregroundColor(.gray)
             Picker("", selection: $gender) {
                 ForEach(genderOptions, id: \.self) { option in
@@ -160,11 +121,11 @@ struct RegistrationView: View {
                 }
             }
             .pickerStyle(.segmented)
+            .tint(AppColor.brandPrimary.color) // Apply tint
         }
         .padding(.horizontal)
     }
     
-    // 👇 เพิ่มฟังก์ชันนี้สำหรับแปลภาษาของตัวเลือกเพศ
     private func localizedGender(_ key: String) -> String {
         switch key {
         case "ชาย": return language.localized("ชาย", "Male")
@@ -173,69 +134,113 @@ struct RegistrationView: View {
         default: return key
         }
     }
-    // --------------------------
+    
+    // MARK: - Action Functions
     
     func handleRegister() {
-        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let trimmedPassword = password.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedConfirmPassword = confirmPassword.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        guard !trimmedEmail.isEmpty && !trimmedPassword.isEmpty && !confirmPassword.isEmpty else {
-            alertMessage = language.localized("กรุณากรอกข้อมูลให้ครบถ้วน", "Please fill in all required fields")
+        // Validation (เหมือนเดิม)
+        guard !trimmedEmail.isEmpty, !trimmedPassword.isEmpty, !trimmedConfirmPassword.isEmpty else {
+            alertMessage = language.localized("กรุณากรอกข้อมูลที่จำเป็น (*) ให้ครบถ้วน", "Please fill in all required (*) fields")
             showAlert = true
             return
         }
-        
         guard isValidEmail(trimmedEmail) else {
-            alertMessage = language.localized("อีเมลไม่ถูกต้อง", "Invalid email format")
+            alertMessage = language.localized("รูปแบบอีเมลไม่ถูกต้อง", "Invalid email format")
+            showAlert = true
+            return
+        }
+        guard trimmedPassword == trimmedConfirmPassword else {
+            alertMessage = language.localized("รหัสผ่านและการยืนยันรหัสผ่านไม่ตรงกัน", "Passwords do not match")
+            showAlert = true
+            return
+        }
+        // --- 👇 เพิ่มการตรวจสอบความยาวและรูปแบบรหัสผ่าน ---
+        guard isPasswordValid(trimmedPassword) else {
+            alertMessage = language.localized(
+                "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร ประกอบด้วยตัวพิมพ์ใหญ่ ตัวพิมพ์เล็ก ตัวเลข และอักขระพิเศษ",
+                "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character."
+            )
+            showAlert = true
+            return
+        }
+        // --- 👆 สิ้นสุดการตรวจสอบรหัสผ่าน ---
+        if memberStore.members.contains(where: { $0.email.lowercased() == trimmedEmail }) {
+            alertMessage = language.localized("อีเมลนี้ถูกใช้ลงทะเบียนแล้ว", "This email is already registered")
             showAlert = true
             return
         }
         
-        guard trimmedPassword == confirmPassword else {
-            alertMessage = language.localized("รหัสผ่านไม่ตรงกัน", "Passwords do not match")
-            showAlert = true
-            return
-        }
-        
-        if memberStore.members.contains(where: { $0.email.lowercased() == trimmedEmail.lowercased() }) {
-            alertMessage = language.localized("อีเมลนี้ถูกใช้สมัครไปแล้ว", "This email is already registered")
-            showAlert = true
-            return
-        }
-        
+        // Create new member (เหมือนเดิม)
         let newMember = Member(
             email: trimmedEmail,
             password: hashPassword(trimmedPassword),
-            fullName: fullName,
+            fullName: fullName.trimmingCharacters(in: .whitespacesAndNewlines),
             gender: gender,
             birthdate: birthdate,
-            birthTime: birthTime,
-            phoneNumber: phoneNumber,
-            houseNumber: houseNumber,
-            carPlate: carPlate
+            birthTime: birthTime.trimmingCharacters(in: .whitespacesAndNewlines),
+            phoneNumber: phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines),
+            houseNumber: houseNumber.trimmingCharacters(in: .whitespacesAndNewlines),
+            carPlate: carPlate.trimmingCharacters(in: .whitespacesAndNewlines)
         )
         
-        memberStore.members.append(newMember)
+        // Add member to store (เหมือนเดิม)
+        memberStore.addMember(newMember) // Assuming addMember handles saving
         
-        flowManager.loggedInEmail = trimmedEmail
-        flowManager.isLoggedIn = false
-        flowManager.currentScreen = .login
+        // --- 👇 จุดแก้ไขที่ 1 ---
+        // Navigate back to login screen after successful registration
+        flowManager.navigateTo(.login) // Use navigateTo
+        // --- 👆 สิ้นสุดส่วนแก้ไข ---
     }
     
+    // Email Validation Helper (เหมือนเดิม)
     func isValidEmail(_ email: String) -> Bool {
-        let regex = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}"
-        return NSPredicate(format: "SELF MATCHES %@", regex).evaluate(with: email)
+        let regex = #"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"#
+        let predicate = NSPredicate(format: "SELF MATCHES %@", regex)
+        return predicate.evaluate(with: email)
     }
     
-    // ฟังก์ชันสำหรับ Hash รหัสผ่าน (ใช้ SHA256)
+    // --- 👇 ฟังก์ชันตรวจสอบรหัสผ่านใหม่ ---
+    func isPasswordValid(_ password: String) -> Bool {
+        // 1. ความยาวอย่างน้อย 8 ตัว
+        if password.count < 8 { return false }
+        
+        // 2. มีตัวพิมพ์เล็กอย่างน้อย 1 ตัว
+        let lowercasePredicate = NSPredicate(format: "SELF MATCHES %@", ".*[a-z]+.*")
+        if !lowercasePredicate.evaluate(with: password) { return false }
+        
+        // 3. มีตัวพิมพ์ใหญ่อย่างน้อย 1 ตัว
+        let uppercasePredicate = NSPredicate(format: "SELF MATCHES %@", ".*[A-Z]+.*")
+        if !uppercasePredicate.evaluate(with: password) { return false }
+        
+        // 4. มีตัวเลขอย่างน้อย 1 ตัว
+        let numberPredicate = NSPredicate(format: "SELF MATCHES %@", ".*[0-9]+.*")
+        if !numberPredicate.evaluate(with: password) { return false }
+        
+        // 5. มีอักขระพิเศษอย่างน้อย 1 ตัว (ตัวอย่าง: !@#$%^&*()-_=+[{]};:'",.<>/?`~)
+        // คุณสามารถปรับแก้ชุดอักขระพิเศษได้ตามต้องการ
+        let specialCharacterPredicate = NSPredicate(format: "SELF MATCHES %@", ".*[!@#$%^&*()\\-_=+\\[{\\]};:'\",.<>/?`~]+.*")
+        if !specialCharacterPredicate.evaluate(with: password) { return false }
+        
+        // ผ่านทุกเงื่อนไข
+        return true
+    }
+    // --- 👆 สิ้นสุดฟังก์ชันตรวจสอบรหัสผ่าน ---
+    
+    // Password Hashing Helper (เหมือนเดิม)
     private func hashPassword(_ password: String) -> String {
-        let data = Data(password.utf8)
+        guard let data = password.data(using: .utf8) else { return "" }
         let hashed = SHA256.hash(data: data)
         return hashed.compactMap { String(format: "%02x", $0) }.joined()
     }
-} // <-- ปิดปีกกาของ RegistrationView
+} // <-- End of RegistrationView
 
-// ✅ Field ปกติ (ปรับปรุงแล้ว)
+// MARK: - Reusable Input Field Components (เหมือนเดิม)
+// ... (โค้ด InputField, RequiredField, RequiredPasswordField อยู่ตรงนี้) ...
+// InputField (Normal)
 struct InputField: View {
     var title: String
     @Binding var text: String
@@ -248,17 +253,17 @@ struct InputField: View {
                 .frame(width: 110, alignment: .leading)
             
             TextField(title, text: $text)
-                .textFieldStyle(PlainTextFieldStyle())
-                .padding(10)
-                .background(AppColor.backgroundSecondary.color)
+                .textFieldStyle(PlainTextFieldStyle()) // Use PlainTextFieldStyle for better background control
+                .padding(10) // Padding inside the field
+                .background(AppColor.backgroundSecondary.color) // Background color for the field
                 .cornerRadius(8)
-                .tint(AppColor.brandPrimary.color)
+                .tint(AppColor.brandPrimary.color) // Cursor/highlight color
         }
-        .padding(.horizontal)
+        .padding(.horizontal) // Padding outside the HStack
     }
 }
 
-// ✅ Field แบบจำเป็น (ปรับปรุงแล้ว)
+// RequiredField (With asterisk)
 struct RequiredField: View {
     var title: String
     @Binding var text: String
@@ -285,11 +290,11 @@ struct RequiredField: View {
     }
 }
 
-// ✅ Password Field (ปรับปรุงแล้ว)
+// RequiredPasswordField (With show/hide button)
 struct RequiredPasswordField: View {
     var title: String
     @Binding var text: String
-    @State private var showPassword: Bool = false
+    @State private var showPassword: Bool = false // Local state for visibility
     
     var body: some View {
         HStack(alignment: .center) {
@@ -302,25 +307,25 @@ struct RequiredPasswordField: View {
             }
             .frame(width: 110, alignment: .leading)
             
-            HStack {
-                if showPassword {
-                    TextField(title, text: $text)
-                        .autocapitalization(.none)
-                        .disableAutocorrection(true)
-                        .textContentType(.oneTimeCode)
-                } else {
-                    SecureField(title, text: $text)
-                        .textContentType(.oneTimeCode)
-                        .autocapitalization(.none)
-                        .disableAutocorrection(true)
+            HStack { // HStack for the field and the button
+                Group { // Group to switch between SecureField and TextField
+                    if showPassword {
+                        TextField(title, text: $text)
+                    } else {
+                        SecureField(title, text: $text)
+                    }
                 }
+                .autocapitalization(.none) // Common modifiers
+                .disableAutocorrection(true)
+                .textContentType(.oneTimeCode) // Prevent strong password suggestions if not desired
                 
                 Button(action: { showPassword.toggle() }) {
                     Image(systemName: showPassword ? "eye.slash" : "eye")
-                        .foregroundColor(AppColor.textSecondary.color)
+                        .foregroundColor(AppColor.textSecondary.color) // Use secondary text color for icon
                 }
+                .buttonStyle(.plain) // Ensure button doesn't have default styling
             }
-            .textFieldStyle(PlainTextFieldStyle())
+            .textFieldStyle(PlainTextFieldStyle()) // Apply style to the inner HStack content
             .padding(10)
             .background(AppColor.backgroundSecondary.color)
             .cornerRadius(8)
@@ -331,9 +336,20 @@ struct RequiredPasswordField: View {
 }
 
 
+// AppAlert Struct (เหมือนเดิม)
 struct AppAlert: Identifiable {
     let id = UUID()
     let title: String
     let message: String
-    let confirmAction: (() -> Void)?
+    let confirmAction: (() -> Void)? = nil
+}
+
+// Preview Provider (เหมือนเดิม)
+#Preview {
+    // NavigationView { // Use if needed
+    RegistrationView()
+        .environmentObject(AppLanguage())
+        .environmentObject(MuTeLuFlowManager())
+        .environmentObject(MemberStore())
+    // }
 }

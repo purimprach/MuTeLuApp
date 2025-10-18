@@ -130,11 +130,12 @@ struct GreetingHeaderCardPro: View {
 }
 
 // MARK: - PlaceSection (รวม NearYou + TopReviews)
+// MARK: - PlaceSection (รวม NearYou + TopReviews)
 private struct PlaceSection: View {
     @EnvironmentObject var language: AppLanguage
     var nearest: [(place: SacredPlace, distance: CLLocationDistance)]
     var topRated: [SacredPlace]
-    var flowManager: MuTeLuFlowManager
+    var flowManager: MuTeLuFlowManager // รับ flowManager มาใช้
     
     @State private var selectedTab = 0
     @State private var pageNear = 0
@@ -142,14 +143,14 @@ private struct PlaceSection: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // Segmented switcher
+            // Segmented switcher (เหมือนเดิม)
             Picker("", selection: $selectedTab) {
                 Text(language.localized("อยู่ใกล้คุณ", "Near You")).tag(0)
                 Text(language.localized("รีวิวเยอะ", "Top Reviews")).tag(1)
             }
             .pickerStyle(.segmented)
             
-            // แสดง TabView เฉพาะแท็บที่เลือก (กัน tag ซ้ำ)
+            // แสดง TabView เฉพาะแท็บที่เลือก
             if selectedTab == 0 {
                 if nearest.isEmpty {
                     EmptyStateView(
@@ -167,9 +168,13 @@ private struct PlaceSection: View {
                                     "🚙  \(formatDistance(item.distance, locale: Locale(identifier: "en_US"))) away"
                                 ),
                                 buttonTitle: language.localized("รายละเอียดสถานที่", "View details"),
-                                buttonAction: { flowManager.currentScreen = .sacredDetail(place: item.place) }
+                                buttonAction: {
+                                    // --- 👇 แก้ไขตรงนี้ ---
+                                    flowManager.navigateTo(.sacredDetail(place: item.place)) // ใช้ navigateTo
+                                    // --- 👆 สิ้นสุดส่วนแก้ไข ---
+                                }
                             )
-                            .padding(.bottom, 22) // กันจุด indicator ทับปุ่ม
+                            .padding(.bottom, 22)
                             .tag(idx)
                         }
                     }
@@ -193,9 +198,13 @@ private struct PlaceSection: View {
                                     place.rating
                                 ),
                                 buttonTitle: language.localized("รายละเอียดสถานที่", "View details"),
-                                buttonAction: { flowManager.currentScreen = .sacredDetail(place: place) }
+                                buttonAction: {
+                                    // --- 👇 แก้ไขตรงนี้ ---
+                                    flowManager.navigateTo(.sacredDetail(place: place)) // ใช้ navigateTo
+                                    // --- 👆 สิ้นสุดส่วนแก้ไข ---
+                                }
                             )
-                            .padding(.bottom, 22) // กันจุด indicator ทับปุ่ม
+                            .padding(.bottom, 22)
                             .tag(idx)
                         }
                     }
@@ -207,6 +216,7 @@ private struct PlaceSection: View {
         .animation(.easeInOut, value: selectedTab)
     }
     
+    // formatDistance function (เหมือนเดิม)
     private func formatDistance(_ meters: CLLocationDistance,
                                 locale: Locale = Locale(identifier: "th_TH")) -> String {
         let f = MKDistanceFormatter()
@@ -216,7 +226,7 @@ private struct PlaceSection: View {
     }
 }
 
-// การ์ดสถานที่ (ใช้ Card/PrimaryButton ที่คุณมีอยู่)
+// การ์ดสถานที่ (PlaceCard) ไม่ต้องแก้ไขอะไร เพราะรับ action มาจากข้างนอกอยู่แล้ว
 private struct PlaceCard: View {
     let title: String
     let subtitle: String
@@ -227,22 +237,21 @@ private struct PlaceCard: View {
         Card {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text("🕍")
+                    Text("🕍") // ควรเป็น Image หรือ Icon ที่สื่อความหมาย
                     Text(title)
                         .font(.subheadline).bold()
-                        .foregroundStyle(Color(.label))
+                        .foregroundStyle(Color(.label)) // ใช้ label color เพื่อรองรับ Dark Mode
                         .lineLimit(2)
                 }
                 Text(subtitle)
                     .font(.subheadline)
-                    .foregroundStyle(.brown)
+                    .foregroundStyle(.secondary) // ใช้ secondary color
                 
                 PrimaryButton(title: buttonTitle, color: .purple, action: buttonAction)
             }
         }
     }
 }
-
 // สถานะว่าง
 private struct EmptyStateView: View {
     let icon: String

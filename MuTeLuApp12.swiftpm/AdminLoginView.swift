@@ -31,20 +31,26 @@ struct AdminLoginView: View {
                 // 🔙 ปุ่มย้อนกลับอยู่ในเนื้อหน้า (ไม่ง้อ Toolbar)
                 HStack {
                     Button {
-                        flowManager.currentScreen = .login
+                        // --- 👇 จุดแก้ไขที่ 2 ---
+                        flowManager.navigateTo(.login) // กลับไปหน้า Login
+                        // หรือถ้าต้องการย้อนกลับจริงๆ ใช้ flowManager.navigateBack()
+                        // --- 👆 สิ้นสุดจุดแก้ไข ---
                     } label: {
                         Label(language.localized("ย้อนกลับ", "Back"), systemImage: "chevron.left")
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.plain) // ควรใส่ .buttonStyle เพื่อให้เห็นชัดเจนบนพื้นหลัง Gradient
+                    .foregroundColor(.white) // ทำให้ปุ่มเป็นสีขาว จะได้เห็นง่ายขึ้น
                     Spacer()
                 }
                 .padding(.horizontal)
-                .padding()
+                .padding() // เพิ่ม padding รอบ HStack ของปุ่มย้อนกลับ
                 
                 Spacer(minLength: 8)
                 
                 Text(language.localized("เข้าสู่ระบบผู้ดูแล", "Admin Login"))
                     .font(.title).bold()
+                    .foregroundColor(.white) // ทำให้หัวข้อเป็นสีขาว
+                    .shadow(radius: 2)      // เพิ่มเงาเล็กน้อย
                     .padding()
                 
                 // การ์ดฟอร์ม
@@ -87,7 +93,7 @@ struct AdminLoginView: View {
                     .padding(.top, 6)
                 }
                 .padding(20)
-                .background(.ultraThinMaterial)
+                .background(.ultraThinMaterial) // ใช้ Material เพื่อให้ดูดีขึ้น
                 .cornerRadius(20)
                 .shadow(color: .black.opacity(0.08), radius: 16, y: 8)
                 .padding(.horizontal)
@@ -111,14 +117,18 @@ struct AdminLoginView: View {
             return
         }
         
-        flowManager.currentScreen = .admin
+        // --- 👇 จุดแก้ไขที่ 1 ---
+        flowManager.navigateTo(.admin) // ไปยังหน้า Admin
+        // --- 👆 สิ้นสุดจุดแก้ไข ---
     }
 }
 
 //
-// MARK: - Reusable Fields
+// MARK: - Reusable Fields (เหมือนเดิม)
 //
 
+// (ส่วน IconTextField และ IconSecureField ไม่มีการเปลี่ยนแปลง)
+// ... (โค้ดส่วนนั้นอยู่ตรงนี้) ...
 /// TextField + ไอคอนซ้าย (บังคับสีตัวอักษร & สีเคอร์เซอร์)
 struct IconTextField: View {
     let systemImage: String
@@ -136,13 +146,13 @@ struct IconTextField: View {
             // จากเดิม: .foregroundColor(.primary)
             // แก้เป็น:
                 .foregroundColor(.black) // ✅ บังคับเป็นสีดำเสมอ
-                .tint(.purple)
+                .tint(.purple) // สีเคอร์เซอร์
                 .autocorrectionDisabled(true)
                 .textInputAutocapitalization(.never)
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 14)
-        .background(Color.white)
+        .background(Color.white) // พื้นหลังช่องกรอกเป็นสีขาว
         .cornerRadius(12)
         .shadow(color: .black.opacity(0.04), radius: 2, y: 1)
     }
@@ -188,10 +198,8 @@ struct IconSecureField: View {
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 14)
-        .background(Color.white)
+        .background(Color.white) // พื้นหลังช่องกรอกเป็นสีขาว
         .cornerRadius(12)
         .shadow(color: .black.opacity(0.04), radius: 2, y: 1)
     }
 }
-
-

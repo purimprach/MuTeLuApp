@@ -1,7 +1,7 @@
 import SwiftUI
 
-// MARK: - Shared Routers / Stores
-
+// MARK: - Shared Routers / Stores (เหมือนเดิม)
+// ... (โค้ดส่วนนี้ไม่มีการเปลี่ยนแปลง) ...
 final class CheckinFilterStore: ObservableObject {
     @Published var selectedUserEmail: String? = nil
     @Published var selectedPlaceID: String? = nil
@@ -13,8 +13,8 @@ final class AdminTabRouter: ObservableObject {
     @Published var selected: Tab = .members
 }
 
-// MARK: - Helpers & Extensions (ไม่มีการเปลี่ยนแปลง)
-
+// MARK: - Helpers & Extensions (เหมือนเดิม)
+// ... (โค้ดส่วนนี้ไม่มีการเปลี่ยนแปลง) ...
 extension Color {
     static let surfaceOverlay = Color.primary.opacity(0.06)
 }
@@ -63,12 +63,13 @@ struct AccentPalette {
     }
 }
 
-// MARK: - AdminView (ไม่มีการเปลี่ยนแปลง)
 
+// MARK: - AdminView (เหมือนเดิม)
 struct AdminView: View {
     @EnvironmentObject var language: AppLanguage
     @StateObject private var tabRouter = AdminTabRouter()
     @StateObject private var filterStore = CheckinFilterStore()
+    @EnvironmentObject var flowManager: MuTeLuFlowManager // เพิ่ม flowManager ที่นี่ด้วย
     
     var body: some View {
         TabView(selection: Binding(
@@ -80,28 +81,28 @@ struct AdminView: View {
                 .tag(0)
                 .environmentObject(tabRouter)
                 .environmentObject(filterStore)
+                .environmentObject(flowManager) // ส่ง flowManager ต่อไป
             
             CheckinHistoryView()
                 .tabItem { Label(language.localized("ประวัติเช็คอิน", "Check-ins"), systemImage: "mappin.and.ellipse") }
                 .tag(1)
                 .environmentObject(tabRouter)
                 .environmentObject(filterStore)
+            // ไม่ต้องส่ง flowManager ที่นี่ ถ้า CheckinHistoryView ไม่ได้ใช้โดยตรง
         }
+        // ไม่ต้องส่ง .environmentObject(flowManager) ที่ระดับ TabView ถ้าส่งให้แต่ละ Tab แล้ว
     }
 }
 
-// MARK: - MemberManagementView
 
+// MARK: - MemberManagementView
 struct MemberManagementView: View {
     @EnvironmentObject var memberStore: MemberStore
     @EnvironmentObject var language: AppLanguage
-    @EnvironmentObject var flowManager: MuTeLuFlowManager
+    @EnvironmentObject var flowManager: MuTeLuFlowManager // รับ flowManager มาใช้
     @EnvironmentObject var tabRouter: AdminTabRouter
     @EnvironmentObject var filterStore: CheckinFilterStore
-    
-    // --- vvv จุดที่แก้ไข vvv ---
-    @EnvironmentObject var activityStore: ActivityStore // ✅ เปลี่ยนมาใช้ ActivityStore
-    // --- ^^^ จุดที่แก้ไข ^^^ ---
+    @EnvironmentObject var activityStore: ActivityStore
     
     @State private var editingMember: Member?
     @State private var memberToDelete: Member?
@@ -109,15 +110,15 @@ struct MemberManagementView: View {
     @State private var showingAddSheet = false
     @State private var sortOption: SortOption = .nameAZ
     @State private var searchText = ""
-    @State private var showLogoutConfirm = false
+    @State private var showLogoutConfirm = false // State เดิมสำหรับ Alert
     
+    // ... (ส่วน enum SortOption, label(), meritPoints(), filteredMembers เหมือนเดิม) ...
     enum SortOption: String, CaseIterable, Identifiable {
         case nameAZ, nameZA, meritHigh, recentLogin
         var id: String { rawValue }
     }
     
     private func label(_ opt: SortOption) -> String {
-        // ... (โค้ดส่วนนี้เหมือนเดิม)
         switch opt {
         case .nameAZ:     return language.localized("ชื่อ A→Z", "Name A→Z")
         case .nameZA:     return language.localized("ชื่อ Z→A", "Name Z→A")
@@ -126,12 +127,9 @@ struct MemberManagementView: View {
         }
     }
     
-    // --- vvv จุดที่แก้ไข vvv ---
-    // ✅ เปลี่ยนมาใช้ activityStore
     private func meritPoints(for m: Member) -> Int {
         activityStore.totalMeritPoints(for: m.email)
     }
-    // --- ^^^ จุดที่แก้ไข ^^^ ---
     
     private var filteredMembers: [Member] {
         var list = memberStore.members
@@ -152,6 +150,7 @@ struct MemberManagementView: View {
         return list
     }
     
+    
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -161,7 +160,7 @@ struct MemberManagementView: View {
                                    language: language,
                                    onEdit: { editingMember = member },
                                    onDelete: { memberToDelete = member; showDeleteConfirm = true })
-                        .environmentObject(activityStore) // ✅ ส่ง activityStore เข้าไป
+                        .environmentObject(activityStore)
                         .environmentObject(tabRouter)
                         .environmentObject(filterStore)
                     }
@@ -172,10 +171,9 @@ struct MemberManagementView: View {
             .navigationTitle(language.localized("จัดการสมาชิก", "Member Management"))
             .searchable(text: $searchText, prompt: Text(language.localized("ค้นหาชื่อ / อีเมล / โทรศัพท์", "Search name / email / phone")))
             .toolbar {
-                // (Toolbar เหมือนเดิม)
                 ToolbarItem(placement: .topBarLeading) {
                     Button(role: .destructive) {
-                        showLogoutConfirm = true
+                        showLogoutConfirm = true // แสดง Alert เมื่อกดปุ่ม Logout
                     } label: {
                         Label(language.localized("ออกจากระบบ", "Logout"), systemImage: "rectangle.portrait.and.arrow.right")
                     }
@@ -194,6 +192,7 @@ struct MemberManagementView: View {
                     } label: { Image(systemName: "ellipsis.circle").imageScale(.large) }
                 }
             }
+            // ... (ส่วน sheet และ alert อื่นๆ เหมือนเดิม) ...
             .sheet(item: $editingMember) { memberToEdit in
                 EditMemberView(member: memberToEdit) { updated in
                     if let index = memberStore.members.firstIndex(where: { $0.id == updated.id }) {
@@ -201,6 +200,7 @@ struct MemberManagementView: View {
                     }
                     editingMember = nil
                 }
+                .environmentObject(language) // อย่าลืมส่ง EnvironmentObject ที่จำเป็น
             }
             .alert(language.localized("ยืนยันการลบ", "Confirm Deletion"), isPresented: $showDeleteConfirm) {
                 Button(language.localized("ลบ", "Delete"), role: .destructive) {
@@ -218,32 +218,32 @@ struct MemberManagementView: View {
                     memberStore.members.append(newMember)
                     showingAddSheet = false
                 }
+                .environmentObject(language) // อย่าลืมส่ง EnvironmentObject ที่จำเป็น
             }
-            .alert(language.localized("ยืนยันการออกจากระบบ", "Confirm Logout"), isPresented: $showLogoutConfirm) {
+            // --- 👇 แก้ไข Alert นี้ ---
+            .alert(language.localized("ยืนยันการออกจากระบบ", "Confirm Logout"), isPresented: $showLogoutConfirm) { // ใช้ State showLogoutConfirm
                 Button(language.localized("ออกจากระบบ", "Logout"), role: .destructive) {
-                    flowManager.isLoggedIn = false
-                    flowManager.currentScreen = .login
+                    flowManager.isLoggedIn = false // ตั้งค่าสถานะ Logout
+                    flowManager.navigateTo(.login) // ใช้ navigateTo ไปหน้า Login
                 }
                 Button(language.localized("ยกเลิก", "Cancel"), role: .cancel) {}
             } message: {
                 Text(language.localized("คุณต้องการออกจากระบบผู้ดูแลหรือไม่?", "Are you sure you want to log out from the admin system?"))
             }
+            // --- 👆 สิ้นสุดส่วนแก้ไข Alert ---
         }
     }
 }
 
-// MARK: - MemberCard
-
+// MARK: - MemberCard (เหมือนเดิม)
+// ... (โค้ดส่วนนี้ไม่มีการเปลี่ยนแปลง นอกจากรับ EnvironmentObject เพิ่ม) ...
 struct MemberCard: View {
     let member: Member
     let language: AppLanguage
     var onEdit: () -> Void
     var onDelete: () -> Void
     
-    // --- vvv จุดที่แก้ไข vvv ---
-    @EnvironmentObject var activityStore: ActivityStore // ✅ เปลี่ยนมาใช้ ActivityStore
-    // --- ^^^ จุดที่แก้ไข ^^^ ---
-    
+    @EnvironmentObject var activityStore: ActivityStore
     @EnvironmentObject var tabRouter: AdminTabRouter
     @EnvironmentObject var filterStore: CheckinFilterStore
     
@@ -252,7 +252,7 @@ struct MemberCard: View {
     }
     
     private var latestCheckinText: String {
-        let rs = activityStore.checkInRecords(for: member.email) // ✅
+        let rs = activityStore.checkInRecords(for: member.email)
         guard let d = rs.max(by: { $0.date < $1.date })?.date else {
             return language.localized("ยังไม่เคยเช็คอิน", "No check-ins yet")
         }
@@ -281,14 +281,12 @@ struct MemberCard: View {
     }
     
     private var gradient: LinearGradient {
-        // ... (โค้ดส่วนนี้เหมือนเดิม)
         let (c1, c2) = AccentPalette.pair(for: member.email)
         return LinearGradient(colors: [c1.opacity(0.38), c2.opacity(0.38)],
                               startPoint: .topLeading, endPoint: .bottomTrailing)
     }
     
     var body: some View {
-        // (Body ของ MemberCard ไม่มีการเปลี่ยนแปลงโครงสร้าง แค่ข้อมูลข้างในถูกอัปเดตอัตโนมัติ)
         VStack(alignment: .leading, spacing: 12) {
             // Header
             HStack(spacing: 12) {
@@ -369,7 +367,7 @@ struct MemberCard: View {
                                     Button {
                                         filterStore.selectedUserEmail = member.email
                                         filterStore.selectedPlaceID  = item.placeID
-                                        tabRouter.selected = .checkIns
+                                        tabRouter.selected = .checkIns // อันนี้เปลี่ยน Tab ไม่ใช่ Screen
                                     } label: {
                                         HStack(spacing: 6) {
                                             Text(item.name).lineLimit(1)
@@ -431,22 +429,20 @@ struct MemberCard: View {
     }
 }
 
-// MARK: - CheckinHistoryView
 
+// MARK: - CheckinHistoryView (เหมือนเดิม)
+// ... (โค้ดส่วนนี้ไม่มีการเปลี่ยนแปลง) ...
 struct CheckinHistoryView: View {
     @EnvironmentObject var memberStore: MemberStore
     @EnvironmentObject var language: AppLanguage
     @EnvironmentObject var filterStore: CheckinFilterStore
-    
-    // --- vvv จุดที่แก้ไข vvv ---
-    @EnvironmentObject var activityStore: ActivityStore // ✅ เปลี่ยนมาใช้ ActivityStore
-    // --- ^^^ จุดที่แก้ไข ^^^ ---
+    @EnvironmentObject var activityStore: ActivityStore
     
     @State private var searchText = ""
     @State private var sortNewestFirst = true
     
-    private var filteredRecords: [ActivityRecord] { // ✅ เปลี่ยน Type เป็น ActivityRecord
-        var records = activityStore.activities.filter { $0.type == .checkIn } // ✅
+    private var filteredRecords: [ActivityRecord] {
+        var records = activityStore.activities.filter { $0.type == .checkIn }
         if let email = filterStore.selectedUserEmail {
             records = records.filter { $0.memberEmail.caseInsensitiveCompare(email) == .orderedSame }
         }
@@ -478,7 +474,7 @@ struct CheckinHistoryView: View {
                                 Label(email, systemImage: "person.crop.circle.fill")
                             }
                             if let pid = filterStore.selectedPlaceID,
-                               let sample = activityStore.activities.first(where: { $0.placeID == pid }) { // ✅
+                               let sample = activityStore.activities.first(where: { $0.placeID == pid }) {
                                 Label(sample.placeNameTH, systemImage: "building.columns.fill")
                             }
                             Spacer()
@@ -499,6 +495,8 @@ struct CheckinHistoryView: View {
                             CheckInRow(record: record)
                                 .listRowSeparator(.hidden)
                                 .listRowInsets(EdgeInsets(top: 8, leading: 14, bottom: 8, trailing: 14))
+                                .environmentObject(memberStore) // ส่ง memberStore เข้าไปใน Row ด้วย
+                                .environmentObject(language)   // ส่ง language เข้าไปใน Row ด้วย
                         }
                     }
                 }
@@ -528,7 +526,7 @@ struct CheckinHistoryView: View {
         }
     }
     
-    private func groupedByDay(_ records: [ActivityRecord]) -> [(key: Date, value: [ActivityRecord])] { // ✅
+    private func groupedByDay(_ records: [ActivityRecord]) -> [(key: Date, value: [ActivityRecord])] {
         let cal = Calendar.current
         let groups = Dictionary(grouping: records) { cal.startOfDay(for: $0.date) }
         return groups.keys.sorted(by: >).map { ($0, groups[$0]!.sorted { $0.date > $1.date }) }
@@ -541,10 +539,11 @@ struct CheckinHistoryView: View {
     }
 }
 
-// MARK: - CheckInRow
 
+// MARK: - CheckInRow (เหมือนเดิม)
+// ... (โค้ดส่วนนี้ไม่มีการเปลี่ยนแปลง นอกจากรับ EnvironmentObject เพิ่ม) ...
 struct CheckInRow: View {
-    let record: ActivityRecord // ✅
+    let record: ActivityRecord
     @EnvironmentObject var memberStore: MemberStore
     @EnvironmentObject var language: AppLanguage
     
@@ -560,7 +559,7 @@ struct CheckInRow: View {
                 Text(language.localized(record.placeNameTH, record.placeNameEN))
                     .font(.headline).foregroundColor(.primary)
                 Spacer()
-                if let points = record.meritPoints { // ✅
+                if let points = record.meritPoints {
                     Label("+\(points)", systemImage: "star.fill")
                         .font(.subheadline.bold()).foregroundColor(.orange)
                         .padding(.horizontal, 8).padding(.vertical, 4)

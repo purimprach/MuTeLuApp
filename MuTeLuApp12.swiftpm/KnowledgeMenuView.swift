@@ -2,7 +2,7 @@ import SwiftUI
 
 struct KnowledgeMenuView: View {
     @EnvironmentObject var language: AppLanguage
-    @EnvironmentObject var flow: MuTeLuFlowManager
+    @EnvironmentObject var flow: MuTeLuFlowManager // ชื่อ flowManager ใน EnvironmentObject คือ flow
     
     var body: some View {
         ZStack {
@@ -17,7 +17,7 @@ struct KnowledgeMenuView: View {
             VStack(spacing: 20) {
                 // MARK: - 2. Header ที่สวยงามขึ้น
                 HStack {
-                    BackButton()
+                    BackButton() // ปุ่ม BackButton ที่แก้ไขแล้ว
                     Spacer()
                 }
                 
@@ -33,43 +33,51 @@ struct KnowledgeMenuView: View {
                         icon: "hands.sparkles.fill", // ✨ ไอคอน
                         screen: .wishDetail
                     )
+                    // ส่ง EnvironmentObject ที่จำเป็นให้ KnowledgeButton
+                    .environmentObject(flow)
                     
                     KnowledgeButton(
                         title: language.localized("การจัดของถวายสังฆทาน", "Preparing Offerings"),
                         icon: "gift.fill", // 🎁 ไอคอน
-                        screen: .knowledgeOfferings
+                        screen: .knowledgeOfferings // หน้าจอใหม่
                     )
+                    .environmentObject(flow)
                     
                     KnowledgeButton(
                         title: language.localized("ความหมายของตัวเลขมงคล", "Meaning of Lucky Numbers"),
                         icon: "number.circle.fill", // 🔢 ไอคอน
-                        screen: .knowledgeNumbers
+                        screen: .knowledgeNumbers // หน้าจอใหม่
                     )
+                    .environmentObject(flow)
                     
                     KnowledgeButton(
                         title: language.localized("การทำ ทาน ศีล ภาวนา", "Giving, Morality & Meditation"),
                         icon: "heart.text.square.fill", // 🙏 ไอคอน
-                        screen: .knowledgeBuddhistPrinciples
+                        screen: .knowledgeBuddhistPrinciples // หน้าจอใหม่
                     )
+                    .environmentObject(flow)
                 }
                 
                 Spacer()
             }
             .padding()
         }
+        // ไม่จำเป็นต้องมี .navigationTitle ที่นี่ ถ้าหน้านี้ไม่ได้อยู่ใน NavigationStack หลัก
     }
 }
 
-// MARK: - Component สำหรับปุ่มเมนู
+// MARK: - Component สำหรับปุ่มเมนู (แก้ไข action)
 struct KnowledgeButton: View {
-    @EnvironmentObject var flow: MuTeLuFlowManager
+    @EnvironmentObject var flow: MuTeLuFlowManager // รับ flowManager มาใช้
     let title: String
     let icon: String
     let screen: MuTeLuScreen
     
     var body: some View {
         Button(action: {
-            flow.currentScreen = screen
+            // --- 👇 แก้ไขตรงนี้ ---
+            flow.navigateTo(screen) // ใช้ navigateTo แทนการกำหนด currentScreen โดยตรง
+            // --- 👆 สิ้นสุดส่วนแก้ไข ---
         }) {
             HStack(spacing: 16) {
                 Image(systemName: icon)
@@ -79,7 +87,7 @@ struct KnowledgeButton: View {
                 
                 Text(title)
                     .font(.headline)
-                    .foregroundColor(.primary)
+                    .foregroundColor(.primary) // ใช้ .primary เพื่อรองรับ Dark Mode
                 
                 Spacer()
                 
@@ -87,16 +95,17 @@ struct KnowledgeButton: View {
                     .foregroundColor(.secondary.opacity(0.5))
             }
             .padding()
-            .background(.ultraThinMaterial)
+            .background(.ultraThinMaterial) // ใช้ Material เพื่อความสวยงาม
             .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
             .shadow(color: .black.opacity(0.05), radius: 5, y: 3)
         }
     }
 }
 
-// MARK: - View สำหรับหน้าที่ยังไม่พร้อมใช้งาน
+// MARK: - View สำหรับหน้าที่ยังไม่พร้อมใช้งาน (เหมือนเดิม)
 struct ComingSoonView: View {
     @EnvironmentObject var language: AppLanguage
+    // อาจจะต้องมี @EnvironmentObject var flow: MuTeLuFlowManager ถ้า BackButton ต้องการ
     
     var body: some View {
         ZStack {
@@ -109,7 +118,7 @@ struct ComingSoonView: View {
             
             VStack(spacing: 16) {
                 HStack {
-                    BackButton()
+                    BackButton() // ตรวจสอบว่า BackButton ได้รับ flowManager หรือไม่
                     Spacer()
                 }
                 Spacer()
@@ -127,4 +136,11 @@ struct ComingSoonView: View {
             .padding()
         }
     }
+}
+
+// Preview (ถ้ามี)
+#Preview {
+    KnowledgeMenuView()
+        .environmentObject(AppLanguage())
+        .environmentObject(MuTeLuFlowManager())
 }
