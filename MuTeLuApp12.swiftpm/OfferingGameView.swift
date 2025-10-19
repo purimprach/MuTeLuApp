@@ -45,7 +45,7 @@ struct OfferingGameView: View {
                 }
             }
         } message: {
-            Text(language.localized("คุณจัดของได้ถูกต้องและผ่านด่านนี้!", "You have prepared the offerings correctly and passed this level!"))
+            Text(language.localized("จัดของได้ถูกต้องและผ่านด่านนี้!", "You have prepared the offerings correctly and passed this level!"))
         }
         .alert(language.localized("ลองใหม่อีกครั้ง", "Try Again"), isPresented: $showErrorAlert) {
             Button("OK") {}
