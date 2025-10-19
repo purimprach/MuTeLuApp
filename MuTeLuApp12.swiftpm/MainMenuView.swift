@@ -146,7 +146,7 @@ private struct PlaceSection: View {
             // Segmented switcher (เหมือนเดิม)
             Picker("", selection: $selectedTab) {
                 Text(language.localized("อยู่ใกล้คุณ", "Near You")).tag(0)
-                Text(language.localized("รีวิวเยอะ", "Top Reviews")).tag(1)
+                Text(language.localized("ยอดนิยม (IL)", "Top Rated (IL)")).tag(1)
             }
             .pickerStyle(.segmented)
             

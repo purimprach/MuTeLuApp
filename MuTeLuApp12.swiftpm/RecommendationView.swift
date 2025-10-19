@@ -10,44 +10,44 @@ struct RecommendationView: View {
     @EnvironmentObject var language: AppLanguage
     @EnvironmentObject var flowManager: MuTeLuFlowManager
     @EnvironmentObject var locationManager: LocationManager
-    @EnvironmentObject var activityStore: ActivityStore
-    @EnvironmentObject var memberStore: MemberStore
-    
+    @EnvironmentObject var activityStore: ActivityStore // ✅ ตรวจสอบว่ามี EnvironmentObject นี้
+    @EnvironmentObject var memberStore: MemberStore     // ✅ ตรวจสอบว่ามี EnvironmentObject นี้
+
     @AppStorage("loggedInEmail") var loggedInEmail: String = ""
-    
+
     @State private var recommendedPlaces: [SacredPlace] = []
     @State private var routeDistances: [UUID: CLLocationDistance] = [:]
-    
+
     // --- 2. Body ---
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 BackButton()
-                
+
                 Text(language.localized("สถานที่แนะนำ", "Recommended Places"))
                     .font(.title2.bold())
                     .frame(maxWidth: .infinity)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
-                
+
                 if !recommendedPlaces.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(language.localized("แนะนำสำหรับคุณโดยเฉพาะ", "Specially Recommended for You"))
                             .font(.headline)
                             .padding(.horizontal)
-                        
+
                         ForEach(recommendedPlaces) { place in
                             PlaceRow(place: place, routeDistance: routeDistances[place.id])
                         }
                     }
                     Divider().padding()
                 }
-                
+
                 VStack(alignment: .leading, spacing: 8) {
                     Text(language.localized("สถานที่ทั้งหมด", "All Places"))
                         .font(.headline)
                         .padding(.horizontal)
-                    
+
                     ForEach(viewModel.places) { place in
                         PlaceRow(place: place, routeDistance: routeDistances[place.id])
                     }
@@ -57,22 +57,29 @@ struct RecommendationView: View {
         }
         .background(Color(.systemGroupedBackground))
         .onAppear {
-            locationManager.userLocation = CLLocation(latitude: 13.738444, longitude: 100.531750)
-            generateRecommendations()
+            // locationManager.userLocation = CLLocation(latitude: 13.738444, longitude: 100.531750) // (บรรทัดนี้อาจไม่จำเป็นต้อง hardcode)
+            generateRecommendations() // เรียก generateRecommendations ตอน View ปรากฏ
             Task { await calculateAllRouteDistances() }
         }
-        .onChange(of: locationManager.userLocation) {
+        .onChange(of: locationManager.userLocation) { // ใช้ onChange(of:) แบบใหม่
             Task { await calculateAllRouteDistances() }
         }
     }
-    
+
     // --- 3. Functions ---
-    
+
+    // --- 👇 [แก้ไข] ฟังก์ชัน generateRecommendations ---
     private func generateRecommendations() {
         // --- ส่วนที่ 1: สร้างโปรไฟล์ความสนใจส่วนตัว (เหมือนเดิม) ---
         var userProfile: [String: Int] = [:]
         let userActivities = activityStore.activities(for: loggedInEmail)
-        
+
+        // โหลดข้อมูลสถานที่ก่อน ถ้ายังไม่มี
+        if viewModel.places.isEmpty {
+            viewModel.loadPlaces() // ตรวจสอบว่ามีฟังก์ชันนี้ใน viewModel ของคุณ
+            // ถ้า loadPlaces เป็น async อาจจะต้องรอ หรือปรับ logic
+        }
+
         for activity in userActivities {
             if let place = viewModel.places.first(where: { $0.id.uuidString == activity.placeID }) {
                 let score: Int
@@ -87,47 +94,91 @@ struct RecommendationView: View {
                 }
             }
         }
-        
-        // --- ส่วนที่ 2: เลือกระบบแนะนำตามโปรไฟล์ ---
+
+        // --- ส่วนที่ 2: เลือกระบบแนะนำ ---
         let allVisitedIDs = activityStore.checkInRecords(for: loggedInEmail).map { UUID(uuidString: $0.placeID) }.compactMap { $0 }
-        
-        // **เงื่อนไข**: ถ้ามีโปรไฟล์ความสนใจ (เคยมีกิจกรรม) ให้ใช้ระบบแนะนำแบบเก่า (ตาม Tag)
-        if !userProfile.isEmpty {
-            let engine = RecommendationEngine(places: viewModel.places)
-            self.recommendedPlaces = engine.getRecommendations(for: userProfile, excluding: allVisitedIDs, top: 3)
-        } 
-        // **เงื่อนไข**: ถ้ายังไม่มีโปรไฟล์ (เป็นผู้ใช้ใหม่) ให้ใช้ระบบ NILR (ISF)
-        else {
-            // สร้าง instance ของ NILRRecommender ที่นี่
-            let nilrRecommender = NILR_Recommender(
-                members: memberStore.members,
-                places: viewModel.places,
-                activities: activityStore.activities
-            )
-            // คำนวณคะแนน
-            let scores = nilrRecommender.calculateScores()
-            
-            // นำผลลัพธ์จาก ISF (ความนิยม) มาใช้แนะนำ
-            self.recommendedPlaces = scores.isf.prefix(3).map { $0.place }
+
+        // สร้าง instance ของ NILRRecommender
+        // ตรวจสอบให้แน่ใจว่า viewModel.places มีข้อมูลแล้ว
+        guard !viewModel.places.isEmpty else {
+             print("⚠️ Places data not loaded yet. Cannot generate recommendations.")
+             self.recommendedPlaces = [] // ตั้งค่าเป็น array ว่างถ้าไม่มีข้อมูล
+             return
         }
+
+        let nilrRecommender = NILR_Recommender(
+            members: memberStore.members, // ใช้ members จาก memberStore
+            places: viewModel.places,     // ใช้ places จาก viewModel
+            activities: activityStore.activities // ใช้ activities จาก activityStore
+        )
+
+        // **เงื่อนไข**: ถ้ามีโปรไฟล์ความสนใจ (เคยมีกิจกรรม) ให้ใช้ระบบแนะนำแบบ Content-based (ตาม Tag) + IL Ranking
+        if !userProfile.isEmpty {
+            print("👤 Generating recommendations based on User Profile + IL Fallback")
+            let engine = RecommendationEngine(places: viewModel.places) // RecommendationEngine เดิม
+            // แนะนำจาก Profile ก่อน
+            let profileBasedRecs = engine.getRecommendations(for: userProfile, excluding: allVisitedIDs, top: 3)
+
+            // ถ้า Profile ยังแนะนำได้ไม่ครบ 3 ที่ ให้เติมด้วย IL Ranking
+            if profileBasedRecs.count < 3 {
+                 print("   Profile recs count (\(profileBasedRecs.count)) < 3, filling with IL Ranking...")
+                 let (isf, isp) = nilrRecommender.calculateISFAndISP() // ใช้ชื่อฟังก์ชันใหม่
+                 let ilRanked = nilrRecommender.calculateILRanking(isfScores: isf, ispScores: isp)
+                 let existingIDs = Set(profileBasedRecs.map { $0.id })
+                 let additionalRecs = ilRanked.filter { !allVisitedIDs.contains($0.id) && !existingIDs.contains($0.id) }.prefix(3 - profileBasedRecs.count)
+                 self.recommendedPlaces = profileBasedRecs + additionalRecs
+            } else {
+                 self.recommendedPlaces = profileBasedRecs
+            }
+
+        }
+        // **เงื่อนไข**: ถ้ายังไม่มีโปรไฟล์ (เป็นผู้ใช้ใหม่) ให้ใช้ระบบ NILR (IL Ranking)
+        else {
+            print("✨ Generating recommendations based on IL Ranking (New User)")
+            // คำนวณ ISF และ ISP
+            let (isf, isp) = nilrRecommender.calculateISFAndISP() // ใช้ชื่อฟังก์ชันใหม่
+            // คำนวณ IL Ranking
+            let ilRankedPlaces = nilrRecommender.calculateILRanking(isfScores: isf, ispScores: isp)
+            // เอา Top 3 ที่ยังไม่เคยไป
+            self.recommendedPlaces = Array(ilRankedPlaces.filter { !allVisitedIDs.contains($0.id) }.prefix(3))
+        }
+
+        print("🏆 Recommended Places: \(self.recommendedPlaces.map { language.currentLanguage == "th" ? $0.nameTH : $0.nameEN } )")
     }
-    
+    // --- 👆 สิ้นสุดฟังก์ชัน generateRecommendations ---
+
+
+    // (ฟังก์ชัน calculateAllRouteDistances เหมือนเดิม)
     private func calculateAllRouteDistances() async {
         guard let userLocation = locationManager.userLocation else { return }
-        
+
+        // โหลดข้อมูลสถานที่ก่อน ถ้ายังไม่มี
+        if viewModel.places.isEmpty {
+             viewModel.loadPlaces()
+        }
+        // Ensure places are loaded before proceeding
+        guard !viewModel.places.isEmpty else {
+             print("⚠️ Places data not loaded for distance calculation.")
+             return
+        }
+
+
         let placesToCalculate = viewModel.places
         let results = await RouteDistanceService.shared.batchDistances(
             from: userLocation.coordinate,
             places: placesToCalculate,
             mode: .driving
         )
-        
+
         var newDistances: [UUID: CLLocationDistance] = [:]
         for result in results {
             newDistances[result.place.id] = result.meters
         }
-        
-        self.routeDistances = newDistances
+
+        // ใช้ MainActor.run เพื่ออัปเดต UI บน main thread
+        await MainActor.run {
+             self.routeDistances = newDistances
+        }
     }
 }
 
@@ -135,10 +186,10 @@ struct RecommendationView: View {
 struct PlaceRow: View {
     let place: SacredPlace
     let routeDistance: CLLocationDistance?
-    
+
     @EnvironmentObject var language: AppLanguage
     @EnvironmentObject var flowManager: MuTeLuFlowManager // รับ flowManager มาใช้
-    
+
     var body: some View {
         Button(action: {
             // --- 👇 แก้ไขตรงนี้ ---
@@ -161,17 +212,17 @@ struct PlaceRow: View {
                         .foregroundColor(.gray.opacity(0.3)) // สี placeholder
                         .background(Color(.systemGray5)) // พื้นหลัง placeholder
                 }
-                
+
                 // ส่วนแสดงข้อความ (เหมือนเดิม)
                 VStack(alignment: .leading, spacing: 6) {
                     Text(language.localized(place.nameTH, place.nameEN))
                         .font(.subheadline).bold() // ทำชื่อตัวหนาเล็กน้อย
                         .foregroundColor(.primary) // ใช้ primary color
                         .lineLimit(2) // จำกัด 2 บรรทัด
-                    
+
                     Text(language.localized(place.locationTH, place.locationEN))
                         .font(.caption).foregroundColor(.gray).lineLimit(2)
-                    
+
                     HStack(spacing: 8) {
                         if let distance = routeDistance {
                             // แสดงระยะทาง (ใช้ฟังก์ชัน chip เดิม)
@@ -196,7 +247,7 @@ struct PlaceRow: View {
         }
         .buttonStyle(.plain) // ทำให้กดได้ทั้งแถวและไม่มี effect แปลกๆ
     }
-    
+
     // formatDistance function (เหมือนเดิม)
     private func formatDistance(_ meters: CLLocationDistance) -> String {
         let formatter = MKDistanceFormatter()

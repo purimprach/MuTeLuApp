@@ -8,6 +8,7 @@ struct RegistrationView: View {
     @State private var showConfirmAlert = false
     @State private var showAlert = false
     @State private var alertMessage = ""
+    @AppStorage("loggedInEmail") private var loggedInEmail: String = ""
     
     // State properties (เหมือนเดิม)
     @State private var email = ""
@@ -189,11 +190,15 @@ struct RegistrationView: View {
         
         // Add member to store (เหมือนเดิม)
         memberStore.addMember(newMember) // Assuming addMember handles saving
+        // 1. ตั้งค่า Email ที่ login อยู่ปัจจุบัน
+        loggedInEmail = newMember.email
         
-        // --- 👇 จุดแก้ไขที่ 1 ---
-        // Navigate back to login screen after successful registration
-        flowManager.navigateTo(.login) // Use navigateTo
-        // --- 👆 สิ้นสุดส่วนแก้ไข ---
+        // 2. ตั้งค่าสถานะ Login ใน FlowManager
+        flowManager.isLoggedIn = true
+        
+        // 3. ไปยังหน้า Home แทนหน้า Login
+        flowManager.navigateTo(.home) // Use navigateTo
+        
     }
     
     // Email Validation Helper (เหมือนเดิม)

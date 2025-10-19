@@ -1,7 +1,5 @@
 import SwiftUI
 
-// MARK: - Shared Routers / Stores (เหมือนเดิม)
-// ... (โค้ดส่วนนี้ไม่มีการเปลี่ยนแปลง) ...
 final class CheckinFilterStore: ObservableObject {
     @Published var selectedUserEmail: String? = nil
     @Published var selectedPlaceID: String? = nil
@@ -13,8 +11,6 @@ final class AdminTabRouter: ObservableObject {
     @Published var selected: Tab = .members
 }
 
-// MARK: - Helpers & Extensions (เหมือนเดิม)
-// ... (โค้ดส่วนนี้ไม่มีการเปลี่ยนแปลง) ...
 extension Color {
     static let surfaceOverlay = Color.primary.opacity(0.06)
 }
