@@ -61,6 +61,7 @@ struct GreetingHeaderCardPro: View {
     
     // --- 👇 [เพิ่ม] State สำหรับควบคุม Alert ---
     @State private var showLoginPromptAlert = false
+    @State private var wave = false
     // --- 👆 สิ้นสุด ---
     
     private var isGuest: Bool { member == nil }
@@ -83,7 +84,7 @@ struct GreetingHeaderCardPro: View {
                                          startPoint: .topLeading, endPoint: .bottomTrailing))
                 Circle().fill(Color.white.opacity(0.03)).frame(width: 160, height: 160).blur(radius: 20).offset(x: 140, y: -50)
                 Circle().fill(Color.black.opacity(0.03)).frame(width: 120, height: 120).blur(radius: 18).offset(x: -140, y: 60)
-                
+
                 VStack(alignment: .leading, spacing: 14) {
                     HStack(alignment: .top, spacing: 12) {
                         // Avatar
@@ -96,32 +97,30 @@ struct GreetingHeaderCardPro: View {
 
                         VStack(alignment: .leading, spacing: 4) {
                             HStack(spacing: 8) {
-                                Text(timeGreeting()).font(.title3.weight(.bold).foregroundStyle(.white)
-                                Text("👋").rotationEffect(.degree(wave ? 15: -10), anchor: .bottomLeading)
-                                .animation(.easeInOut(duration: 1).repeatForever(autoreverses: true), value: wave)
+                                Text(timeGreeting())
+                                    .font(.title3.weight(.bold))
+                                    .foregroundStyle(.white)
+                                Text("👋")
+                                    .rotationEffect(.degrees(wave ? 15 : -10), anchor: .bottomLeading)
+                                    .animation(.easeInOut(duration: 1)
+                                        .repeatForever(autoreverses: true), value: wave)
                             }
 
                             Text(displayName)
                                 .font(.headline)
                                 .foregroundStyle(.white.opacity(0.92))
-                            
-                            Text( isGuest ? language.localized("กำลังใช้งานในโหมด Guest", "Currently in Guest Mode") : subtitle)
+
+                            Text(isGuest ? language.localized("กำลังใช้งานในโหมด Guest", "Currently in Guest Mode") : subtitle)
                                 .font(.subheadline)
                                 .foregroundStyle(.white.opacity(0.8))
-                        }
-                        Spacer()
-                        
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(displayName).font(.title3.weight(.bold)).foregroundStyle(.white)
+
                             if isGuest {
-                                Button(language.localized("เข้าสู่ระบบที่นี่", "Login Here")) {
+                                Button(language.localized("เข้าสู่ระบบ", "sign in")) {
                                     showLoginPromptAlert = true
                                 }
-                                .font(.subheadline.weight(.medium))
-                                .foregroundColor(.white.opacity(0.9))
+                                .font(.subheadline.weight(.bold))
+                                .foregroundColor(.yellow)
                                 .underline()
-                            } else {
-                                Text(displaySubtitle).font(.subheadline).foregroundStyle(.white.opacity(0.8))
                             }
                         }
                         Spacer()
@@ -142,6 +141,7 @@ struct GreetingHeaderCardPro: View {
             .shadow(/* ... Shadow ... */ color: .black.opacity(0.12), radius: 10, y: 6)
             .padding(.horizontal)
         }
+        .onAppear { wave = true }
         // --- 👇 [เพิ่ม] Alert Modifier ---
         .alert(language.localized("เข้าสู่ระบบ / สมัครสมาชิก", "Login / Register"), isPresented: $showLoginPromptAlert) {
             Button(language.localized("ไปที่หน้า Login", "Go to Login")) {
@@ -152,6 +152,17 @@ struct GreetingHeaderCardPro: View {
             Text(language.localized("คุณต้องการไปที่หน้าเข้าสู่ระบบหรือสมัครสมาชิกหรือไม่?", "Do you want to go to the login or registration page?"))
         }
         // --- 👆 สิ้นสุด ---
+    }
+
+    // MARK: - Helpers
+    private func timeGreeting() -> String {
+        let h = Calendar.current.component(.hour, from: Date())
+        switch h {
+        case 5..<12:  return "สวัสดีตอนเช้า"
+        case 12..<16: return "สวัสดีตอนบ่าย"
+        case 16..<20: return "สวัสดีตอนเย็น"
+        default:      return "สวัสดี"
+        }
     }
 }
 // MARK: - PlaceSection (รวม NearYou + TopReviews - แก้ไข Subtitle IL)
