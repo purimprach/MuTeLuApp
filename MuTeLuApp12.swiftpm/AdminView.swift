@@ -99,6 +99,7 @@ struct MemberManagementView: View {
     @EnvironmentObject var tabRouter: AdminTabRouter
     @EnvironmentObject var filterStore: CheckinFilterStore
     @EnvironmentObject var activityStore: ActivityStore
+    @AppStorage("loggedInEmail") private var loggedInEmail: String = ""
     
     @State private var editingMember: Member?
     @State private var memberToDelete: Member?
@@ -219,6 +220,7 @@ struct MemberManagementView: View {
             // --- 👇 แก้ไข Alert นี้ ---
             .alert(language.localized("ยืนยันการออกจากระบบ", "Confirm Logout"), isPresented: $showLogoutConfirm) { // ใช้ State showLogoutConfirm
                 Button(language.localized("ออกจากระบบ", "Logout"), role: .destructive) {
+                    loggedInEmail = "" // ล้าง Email ที่จำไว้
                     flowManager.isLoggedIn = false // ตั้งค่าสถานะ Logout
                     flowManager.navigateTo(.login) // ใช้ navigateTo ไปหน้า Login
                 }

@@ -135,9 +135,11 @@ struct ProfileView: View {
                 .padding(.horizontal)
                 .alert(language.localized("ยืนยันการออกจากระบบ", "Confirm Logout"), isPresented: $showLogoutAlert) {
                     Button(language.localized("ยืนยัน", "Confirm"), role: .destructive) {
+                        loggedInEmail = "" // ล้าง Email ที่จำไว้
                         flowManager.isLoggedIn = false
                         flowManager.navigateTo(.login)
                     }
+                    // ...
                     Button(language.localized("ยกเลิก", "Cancel"), role: .cancel) {}
                 }
             }
