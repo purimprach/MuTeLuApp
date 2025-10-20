@@ -11,7 +11,7 @@ struct RecommenderForYouView: View {
     @EnvironmentObject var flowManager: MuTeLuFlowManager // รับ flowManager มาใช้
     @EnvironmentObject private var memberStore: MemberStore
     @EnvironmentObject private var bookmarkStore: BookmarkStore
-    @StateObject private var sacredPlaceViewModel = SacredPlaceViewModel() // ใช้ load ข้อมูลสถานที่
+    @EnvironmentObject var sacredPlaceViewModel: SacredPlaceViewModel
     
     @AppStorage("loggedInEmail") private var loggedInEmail: String = ""
     @StateObject private var loc = LocationProvider() // สำหรับ LocationProvider (ถ้าจำเป็น)
@@ -78,8 +78,10 @@ struct RecommenderForYouView: View {
                                 headingEN: heading.en,
                                 memberOverride: member, // ส่ง member เข้าไป
                                 openDetail: {
-                                    // Action เหมือน Today's Temple (ถ้า Login อยู่)
-                                    flowManager.navigateTo(.recommendation)
+                                    let temple = getRecommendedTemple(for: member)
+                                    if let place = sacredPlaceViewModel.places.first(where: { $0.nameTH == temple.nameTH || $0.nameEN == temple.nameEN }) {
+                                        flowManager.navigateTo(.sacredDetail(place: place))
+                                    }
                                 }
                             )
                             .environmentObject(language)
@@ -102,9 +104,10 @@ struct RecommenderForYouView: View {
         .background(Color(.systemGroupedBackground))
         // Load ข้อมูลสถานที่เมื่อ View ปรากฏ
         .onAppear {
-            if sacredPlaceViewModel.places.isEmpty {
-                sacredPlaceViewModel.loadPlaces()
-            }
+            loc.startUpdating()
+        }
+        .onDisappear {
+            loc.stopUpdating()
         }
     }
     
@@ -408,3 +411,16 @@ final class LocationProvider: NSObject, ObservableObject, CLLocationManagerDeleg
     }
 }
 
+#Preview {
+    let mockLanguage = AppLanguage()
+    let mockFlowManager = MuTeLuFlowManager()
+    let mockMemberStore = MemberStore()
+    let mockBookmarkStore = BookmarkStore()
+    let mockSacredPlaceViewModel = SacredPlaceViewModel() 
+    return RecommenderForYouView()
+        .environmentObject(mockLanguage)
+        .environmentObject(mockFlowManager)
+        .environmentObject(mockMemberStore)
+        .environmentObject(mockBookmarkStore)
+        .environmentObject(mockSacredPlaceViewModel) // ส่ง Mock ViewModel
+}

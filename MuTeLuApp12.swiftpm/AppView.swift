@@ -10,6 +10,7 @@ struct AppView: View {
     @EnvironmentObject var userActionStore: UserActionStore 
     @EnvironmentObject var bookmarkStore: BookmarkStore
     @EnvironmentObject var activityStore: ActivityStore
+    @EnvironmentObject var sacredPlaceViewModel: SacredPlaceViewModel
     
     private var activeMember: Member? {
         memberStore.members.first { $0.email == loggedInEmail }
@@ -56,11 +57,11 @@ struct AppView: View {
         .environmentObject(activityStore)
         .environmentObject(likeStore)
         .environmentObject(bookmarkStore)
-        .environmentObject(userActionStore) // ✅ ตอนนี้ userActionStore 
+        .environmentObject(userActionStore)
+        .environmentObject(sacredPlaceViewModel)
     }
 }
 
-// --- 👇 [แก้ไข] Preview ให้รับ userActionStore ด้วย ---
 #Preview {
     let mockFlowManager = MuTeLuFlowManager()
     let mockLanguage = AppLanguage()
@@ -69,7 +70,8 @@ struct AppView: View {
     let mockActivityStore = ActivityStore()
     let mockLikeStore = LikeStore()
     let mockBookmarkStore = BookmarkStore()
-    let mockUserActionStore = UserActionStore() // สร้าง Mock Object
+    let mockUserActionStore = UserActionStore() 
+    let mockSacredPlaceViewModel = SacredPlaceViewModel()
     
     return AppView()
         .environmentObject(mockFlowManager)
@@ -79,5 +81,6 @@ struct AppView: View {
         .environmentObject(mockActivityStore)
         .environmentObject(mockLikeStore)
         .environmentObject(mockBookmarkStore)
-        .environmentObject(mockUserActionStore) // ส่ง Mock Object เข้าไป
+        .environmentObject(mockUserActionStore)
+        .environmentObject(mockSacredPlaceViewModel)
 }

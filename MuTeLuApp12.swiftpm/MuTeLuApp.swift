@@ -6,11 +6,11 @@ struct MuTeLuApp: App {
     @StateObject var flowManager = MuTeLuFlowManager()
     @StateObject var locationManager = LocationManager()
     @StateObject var memberStore = MemberStore()
-    @StateObject var checkInStore = CheckInStore()
     @StateObject var likeStore = LikeStore()
     @StateObject var bookmarkStore = BookmarkStore()
     @StateObject var activityStore = ActivityStore()
     @StateObject var userActionStore = UserActionStore()
+    @StateObject var sacredPlaceViewModel = SacredPlaceViewModel()
     
     var body: some Scene {
         WindowGroup {
@@ -19,11 +19,11 @@ struct MuTeLuApp: App {
                 .environmentObject(flowManager)
                 .environmentObject(locationManager)
                 .environmentObject(memberStore)
-                .environmentObject(checkInStore)
                 .environmentObject(likeStore)
                 .environmentObject(bookmarkStore)
                 .environmentObject(activityStore)
                 .environmentObject(userActionStore)
+                .environmentObject(sacredPlaceViewModel)
         }
     }
 }

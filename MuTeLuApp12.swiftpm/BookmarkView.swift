@@ -2,9 +2,9 @@ import SwiftUI
 
 struct BookmarkView: View {
     @EnvironmentObject var language: AppLanguage
-    @EnvironmentObject var flowManager: MuTeLuFlowManager // 👈 เพิ่มเข้ามา (มีอยู่แล้ว)
+    @EnvironmentObject var flowManager: MuTeLuFlowManager 
     @EnvironmentObject var bookmarkStore: BookmarkStore
-    @StateObject private var viewModel = SacredPlaceViewModel()
+    @EnvironmentObject var sacredPlaceViewModel: SacredPlaceViewModel
     @AppStorage("loggedInEmail") private var loggedInEmail: String = ""
     
     // ... (bookmarkedRecords เหมือนเดิม) ...
@@ -28,7 +28,7 @@ struct BookmarkView: View {
                     Spacer()
                 } else {
                     List(bookmarkedRecords) { record in
-                        if let place = viewModel.places.first(where: { $0.id.uuidString == record.placeID }) {
+                        if let place = sacredPlaceViewModel.places.first(where: { $0.id.uuidString == record.placeID }) {
                             BookmarkRow(place: place, record: record)
                                 .onTapGesture {
                                     flowManager.navigateTo(.sacredDetail(place: place))
@@ -46,16 +46,11 @@ struct BookmarkView: View {
             .navigationTitle("📍 \(language.localized("สถานที่บันทึกไว้", "Bookmarked Places"))") // Title เดิม
             .navigationBarTitleDisplayMode(.inline) // Mode เดิม
             .onAppear {
-                if viewModel.places.isEmpty {
-                    viewModel.loadPlaces()
-                }
             }
-        } // End else (สำหรับ Login อยู่)
-        // --- 👆 สิ้นสุดการเช็ค ---
+        }
     } // End body
 } // End struct
 
-// ... (BookmarkRow เหมือนเดิม) ...
 struct BookmarkRow: View { /* ... */
     let place: SacredPlace; let record: BookmarkRecord
     @EnvironmentObject var language: AppLanguage
@@ -76,5 +71,20 @@ struct BookmarkRow: View { /* ... */
             Spacer()
             Image(systemName: "chevron.right").foregroundColor(.secondary.opacity(0.5))
         }.padding(.vertical, 8)
+    }
+}
+
+#Preview {
+    let mockLanguage = AppLanguage()
+    let mockFlowManager = MuTeLuFlowManager()
+    let mockBookmarkStore = BookmarkStore()
+    let mockSacredPlaceViewModel = SacredPlaceViewModel()
+    
+    return NavigationView { // ใส่ NavigationView เพื่อให้ Title แสดงผล
+        BookmarkView()
+            .environmentObject(mockLanguage)
+            .environmentObject(mockFlowManager)
+            .environmentObject(mockBookmarkStore)
+            .environmentObject(mockSacredPlaceViewModel) // ส่ง Mock ViewModel
     }
 }

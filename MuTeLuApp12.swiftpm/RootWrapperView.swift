@@ -5,13 +5,13 @@ struct RootWrapperView: View {
     @EnvironmentObject var flowManager: MuTeLuFlowManager
     @EnvironmentObject var activityStore: ActivityStore
     @AppStorage("loggedInEmail") private var loggedInEmail: String = ""
+    @EnvironmentObject var sacredPlaceViewModel: SacredPlaceViewModel
     
     var body: some View {
         AppView()
             .onAppear {
                 activityStore.loadActivities() // โหลด ActivityStore
                 
-                // --- 👇 [แก้ไข] Logic ตรวจสอบ Login/Guest ---
                 if !loggedInEmail.isEmpty {
                     // ถ้ามี email ที่จำไว้ ให้ถือว่า Login อยู่ และเริ่มที่ Home
                     print("👤 Found logged-in user: \(loggedInEmail), starting at Home.")

@@ -5,8 +5,7 @@ import MapKit
 // MARK: - Main View: RecommendationView
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 struct RecommendationView: View {
-    // --- 1. Properties ---
-    @StateObject private var viewModel = SacredPlaceViewModel()
+    @EnvironmentObject var sacredPlaceViewModel: SacredPlaceViewModel
     @EnvironmentObject var language: AppLanguage
     @EnvironmentObject var flowManager: MuTeLuFlowManager
     @EnvironmentObject var locationManager: LocationManager
@@ -48,7 +47,7 @@ struct RecommendationView: View {
                         .font(.headline)
                         .padding(.horizontal)
 
-                    ForEach(viewModel.places) { place in
+                    ForEach(sacredPlaceViewModel.places) { place in
                         PlaceRow(place: place, routeDistance: routeDistances[place.id])
                     }
                 }
@@ -57,7 +56,6 @@ struct RecommendationView: View {
         }
         .background(Color(.systemGroupedBackground))
         .onAppear {
-            // locationManager.userLocation = CLLocation(latitude: 13.738444, longitude: 100.531750) // (บรรทัดนี้อาจไม่จำเป็นต้อง hardcode)
             generateRecommendations() // เรียก generateRecommendations ตอน View ปรากฏ
             Task { await calculateAllRouteDistances() }
         }
@@ -67,21 +65,13 @@ struct RecommendationView: View {
     }
 
     // --- 3. Functions ---
-
-    // --- 👇 [แก้ไข] ฟังก์ชัน generateRecommendations ---
     private func generateRecommendations() {
         // --- ส่วนที่ 1: สร้างโปรไฟล์ความสนใจส่วนตัว (เหมือนเดิม) ---
         var userProfile: [String: Int] = [:]
         let userActivities = activityStore.activities(for: loggedInEmail)
 
-        // โหลดข้อมูลสถานที่ก่อน ถ้ายังไม่มี
-        if viewModel.places.isEmpty {
-            viewModel.loadPlaces() // ตรวจสอบว่ามีฟังก์ชันนี้ใน viewModel ของคุณ
-            // ถ้า loadPlaces เป็น async อาจจะต้องรอ หรือปรับ logic
-        }
-
         for activity in userActivities {
-            if let place = viewModel.places.first(where: { $0.id.uuidString == activity.placeID }) {
+            if let place = sacredPlaceViewModel.places.first(where: { $0.id.uuidString == activity.placeID }) {
                 let score: Int
                 switch activity.type {
                 case .checkIn: score = 10
@@ -100,22 +90,22 @@ struct RecommendationView: View {
 
         // สร้าง instance ของ NILRRecommender
         // ตรวจสอบให้แน่ใจว่า viewModel.places มีข้อมูลแล้ว
-        guard !viewModel.places.isEmpty else {
+        guard !sacredPlaceViewModel.places.isEmpty else {
              print("⚠️ Places data not loaded yet. Cannot generate recommendations.")
              self.recommendedPlaces = [] // ตั้งค่าเป็น array ว่างถ้าไม่มีข้อมูล
              return
         }
 
         let nilrRecommender = NILR_Recommender(
-            members: memberStore.members, // ใช้ members จาก memberStore
-            places: viewModel.places,     // ใช้ places จาก viewModel
-            activities: activityStore.activities // ใช้ activities จาก activityStore
+            members: memberStore.members, 
+            places: sacredPlaceViewModel.places,     
+            activities: activityStore.activities 
         )
 
         // **เงื่อนไข**: ถ้ามีโปรไฟล์ความสนใจ (เคยมีกิจกรรม) ให้ใช้ระบบแนะนำแบบ Content-based (ตาม Tag) + IL Ranking
         if !userProfile.isEmpty {
             print("👤 Generating recommendations based on User Profile + IL Fallback")
-            let engine = RecommendationEngine(places: viewModel.places) // RecommendationEngine เดิม
+            let engine = RecommendationEngine(places: sacredPlaceViewModel.places) 
             // แนะนำจาก Profile ก่อน
             let profileBasedRecs = engine.getRecommendations(for: userProfile, excluding: allVisitedIDs, top: 3)
 
@@ -152,18 +142,12 @@ struct RecommendationView: View {
     private func calculateAllRouteDistances() async {
         guard let userLocation = locationManager.userLocation else { return }
 
-        // โหลดข้อมูลสถานที่ก่อน ถ้ายังไม่มี
-        if viewModel.places.isEmpty {
-             viewModel.loadPlaces()
-        }
-        // Ensure places are loaded before proceeding
-        guard !viewModel.places.isEmpty else {
+        guard !sacredPlaceViewModel.places.isEmpty else {
              print("⚠️ Places data not loaded for distance calculation.")
              return
         }
 
-
-        let placesToCalculate = viewModel.places
+        let placesToCalculate = sacredPlaceViewModel.places
         let results = await RouteDistanceService.shared.batchDistances(
             from: userLocation.coordinate,
             places: placesToCalculate,
@@ -271,4 +255,21 @@ private func chip(text: String, icon: String) -> some View {
     .background(Color(.tertiarySystemBackground))
     .clipShape(Capsule())
     .foregroundColor(.orange)
+}
+#Preview {
+    // สร้าง Mock Objects ที่จำเป็น
+    let mockLanguage = AppLanguage()
+    let mockFlowManager = MuTeLuFlowManager()
+    let mockLocationManager = LocationManager()
+    let mockActivityStore = ActivityStore()
+    let mockMemberStore = MemberStore()
+    let mockSacredPlaceViewModel = SacredPlaceViewModel() // สร้าง Mock ViewModel
+    
+    return RecommendationView()
+        .environmentObject(mockLanguage)
+        .environmentObject(mockFlowManager)
+        .environmentObject(mockLocationManager)
+        .environmentObject(mockActivityStore)
+        .environmentObject(mockMemberStore)
+        .environmentObject(mockSacredPlaceViewModel) // ส่ง Mock ViewModel
 }

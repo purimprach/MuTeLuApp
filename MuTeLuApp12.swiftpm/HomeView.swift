@@ -3,33 +3,22 @@ import CoreLocation
 
 struct HomeView: View {
     enum HomeTab: Hashable { case home, notifications, history, profile }
-    
-    @StateObject private var viewModel = SacredPlaceViewModel()
+    @EnvironmentObject var sacredPlaceViewModel: SacredPlaceViewModel
     @EnvironmentObject var language: AppLanguage
     @EnvironmentObject var flowManager: MuTeLuFlowManager
     @EnvironmentObject var memberStore: MemberStore
     @EnvironmentObject var locationManager: LocationManager
-    // @EnvironmentObject var checkInStore: CheckInStore // CheckInStore อาจไม่จำเป็นต้องใช้ตรงนี้แล้ว ถ้า activityStore ครอบคลุม
-    @EnvironmentObject var activityStore: ActivityStore // ✅ เพิ่ม activityStore ที่นี่
+    @EnvironmentObject var activityStore: ActivityStore 
     
     @AppStorage("loggedInEmail") private var loggedInEmail: String = ""
     
     @State private var selectedTab: HomeTab = .home
     @State private var showBanner = false
-    @State private var topILPlaces: [SacredPlace] = [] // State สำหรับ IL Ranking
-    
-    // ส่งให้ MainMenuView
+    @State private var topILPlaces: [SacredPlace] = [] 
     @State private var nearestWithDistance: [(place: SacredPlace, distance: CLLocationDistance)] = []
-    // @State private var topRatedPlaces: [SacredPlace] = [] // ลบ State เดิมนี้ออก
-    
-    // สถานะคุมการคำนวณ
     @State private var locationUnavailable = false
     @State private var lastComputedLocation: CLLocation?
     @State private var lastComputeAt: Date = .distantPast
-    
-    // ✅ โหลด sacredPlaces ที่นี่เพื่อให้แน่ใจว่ามีข้อมูลเมื่อคำนวณ IL
-    // หรือจะโหลดใน viewModel ก็ได้ แต่ต้องแน่ใจว่าโหลดเสร็จก่อนเรียก calculateILRankingForHome
-    private let sacredPlaces: [SacredPlace] = loadSacredPlaces() // โหลดข้อมูล
     
     private let minMoveMeters: CLLocationDistance = 50
     private let minInterval: TimeInterval = 6
@@ -50,6 +39,9 @@ struct HomeView: View {
                 locationManager: locationManager
             )
             .environmentObject(language)
+            .environmentObject(flowManager)
+            .environmentObject(activityStore)
+            .environmentObject(locationManager)
             .overlay(alignment: .top) {
                 if locationUnavailable {
                     Text(language.localized("ไม่พบตำแหน่งที่ตั้ง", "Location unavailable"))
@@ -108,15 +100,16 @@ struct HomeView: View {
     
     // ✅ ฟังก์ชันคำนวณ IL Ranking (ที่เพิ่มเข้ามา)
     private func calculateILRankingForHome() async {
-        // ใช้ sacredPlaces ที่โหลดไว้แล้ว
-        if sacredPlaces.isEmpty {
+        // --- 👇 [แก้ไข] ใช้ viewModel.places ---
+        // if sacredPlaces.isEmpty { ... } // <--- ลบออก
+        guard !sacredPlaceViewModel.places.isEmpty else { // <--- ใช้ตัวนี้แทน
             print("⚠️ No sacred places loaded for IL Ranking.")
             return
         }
         
         let nilrRecommender = NILR_Recommender(
             members: memberStore.members,
-            places: sacredPlaces, // ใช้ข้อมูลที่โหลดไว้
+            places: sacredPlaceViewModel.places,
             activities: activityStore.activities
         )
         let (isf, isp) = nilrRecommender.calculateISFAndISP()
@@ -163,31 +156,30 @@ struct HomeView: View {
     }
     
     // MARK: - Core compute returns value (ทดสอบง่าย/อัพเดตรวม)
+    // MARK: - Core compute returns value (ทดสอบง่าย/อัพเดตรวม)
     private func computeNearest(from userCL: CLLocation) async
-    -> (nearest: [(place: SacredPlace, distance: CLLocationDistance)], topRated: [SacredPlace]) { // 👈 ยังคง return topRated เดิมไปก่อน เผื่อมีการใช้งานที่อื่น หรือจะลบออกก็ได้ถ้าแน่ใจว่าไม่ได้ใช้แล้ว
-        
-        // 1) ระยะเส้นตรง
-        // ใช้ sacredPlaces ที่โหลดไว้แล้ว
-        guard !sacredPlaces.isEmpty else {
+    -> (nearest: [(place: SacredPlace, distance: CLLocationDistance)], topRated: [SacredPlace]) {
+        guard !sacredPlaceViewModel.places.isEmpty else {
             print("⚠️ No sacred places loaded for Nearest calculation.")
             return (nearest: [], topRated: [])
         }
-        let linearRank = sacredPlaces.map { place in
+        let currentPlace = sacredPlaceViewModel.places // ใช้ viewModel ถูกต้องแล้ว
+        let linearRank = currentPlace.map { place in
             (place: place,
              d: userCL.distance(from: CLLocation(latitude: place.latitude,
                                                  longitude: place.longitude)))
         }
-        let k = min(8, sacredPlaces.count)
+        let k = min(8, currentPlace.count)
         let topLinearPlaces = Array(linearRank.sorted { $0.d < $1.d }.prefix(k)).map { $0.place }
         
-        // 2) ระยะจริงจากเส้นทาง
+        // 2) ระยะจริงจากเส้นทาง (เหมือนเดิม)
         let routed = await RouteDistanceService.shared.batchDistances(
             from: userCL.coordinate,
             places: topLinearPlaces,
             mode: .driving
         )
         
-        // 3) กรองค่า nil + เรียงสั้นสุด
+        // 3) กรองค่า nil + เรียงสั้นสุด (เหมือนเดิม)
         let nearest3 = routed
             .compactMap { r -> (SacredPlace, CLLocationDistance)? in
                 guard let d = r.meters else { return nil }
@@ -195,9 +187,8 @@ struct HomeView: View {
             }
             .sorted { $0.1 < $1.1 }
         let nearest = Array(nearest3.prefix(3)).map { (place: $0.0, distance: $0.1) }
-        
-        // 4) รีวิวสูงสุด (คำนวณไว้เผื่อใช้ แต่ไม่ได้อัปเดต state โดยตรงแล้ว)
-        let topRated = Array(sacredPlaces.sorted { $0.rating > $1.rating }.prefix(3))
+    
+        let topRated = Array(currentPlace.sorted { $0.rating > $1.rating }.prefix(3))
         
         return (nearest, topRated)
     }
