@@ -42,7 +42,7 @@ struct HomeView: View {
         TabView(selection: $selectedTab) {
             MainMenuView(
                 showBanner: $showBanner,
-                currentMember: currentMember,
+                currentMember: flowManager.isGuestMode ? nil : currentMember, // ถ้าเป็น Guest ไม่ต้องส่ง member
                 flowManager: flowManager,
                 nearest: nearestWithDistance,
                 topRated: topILPlaces, // 👈 ส่ง topILPlaces ที่คำนวณ IL แล้ว
@@ -64,17 +64,33 @@ struct HomeView: View {
             .tabItem { Label(language.localized("หน้าหลัก", "Home"), systemImage: "house") }
             .tag(HomeTab.home)
             
-            NotificationView()
+            NotificationView() // (อาจจะต้องจำกัดฟีเจอร์ข้างใน View นี้ทีหลัง ถ้าจำเป็น)
                 .tabItem { Label(language.localized("การแจ้งเตือน", "Notifications"), systemImage: "bell") }
                 .tag(HomeTab.notifications)
             
+            // --- Tab ประวัติ (History) ---
             HistoryView()
+                .environmentObject(language) // ส่ง EnvironmentObjects ที่จำเป็น
+                .environmentObject(flowManager)
+                .environmentObject(activityStore)
                 .tabItem { Label(language.localized("ประวัติ", "History"), systemImage: "clock") }
                 .tag(HomeTab.history)
+            // --- 👇 [เพิ่ม] ทำให้กดไม่ได้ถ้าเป็น Guest ---
+                .disabled(flowManager.isGuestMode)
+                .opacity(flowManager.isGuestMode ? 0.5 : 1.0) // ทำให้จางลง
+            // --- 👆 สิ้นสุด ---
             
-            NavigationStack { ProfileView() }
+            // --- Tab ข้อมูลของฉัน (Profile) ---
+            NavigationStack { ProfileView() } // ProfileView จะจัดการเรื่อง Guest ข้างในเอง
+                .environmentObject(language) // ส่ง EnvironmentObjects ที่จำเป็น
+                .environmentObject(flowManager)
+                .environmentObject(memberStore)
+                .environmentObject(activityStore) // ProfileView อาจต้องใช้ activityStore ด้วย
                 .tabItem { Label(language.localized("ข้อมูลของฉัน", "Profile"), systemImage: "person.circle") }
                 .tag(HomeTab.profile)
+            // --- 👇 [เพิ่ม] ทำให้กดไม่ได้ถ้าเป็น Guest ---
+                .disabled(flowManager.isGuestMode)
+                .opacity(flowManager.isGuestMode ? 0.5 : 1.0)
         }
         .tint(.purple)
         // เรียกครั้งแรกเมื่อหน้าแสดง

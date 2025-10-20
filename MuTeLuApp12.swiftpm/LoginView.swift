@@ -174,7 +174,7 @@ struct LoginView: View {
                             withAnimation { showGreetingPopup = false }
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                 flowManager.isLoggedIn = true
-                                // ไม่ต้อง navigate ที่นี่แล้ว
+                                flowManager.navigateTo(.home)
                             }
                         }
                     
@@ -191,7 +191,7 @@ struct LoginView: View {
                             withAnimation { showGreetingPopup = false }
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                 flowManager.isLoggedIn = true
-                                // ไม่ต้อง navigate ที่นี่แล้ว
+                                flowManager.navigateTo(.home)
                             }
                         }) {
                             Text(language.localized("ตกลง", "OK"))

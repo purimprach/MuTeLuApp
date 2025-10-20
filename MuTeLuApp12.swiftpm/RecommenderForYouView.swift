@@ -10,17 +10,15 @@ struct RecommenderForYouView: View {
     @EnvironmentObject var language: AppLanguage
     @EnvironmentObject var flowManager: MuTeLuFlowManager // รับ flowManager มาใช้
     @EnvironmentObject private var memberStore: MemberStore
-    
-    // --- Stores ที่จำเป็น (เหมือนเดิม) ---
     @EnvironmentObject private var bookmarkStore: BookmarkStore
     @StateObject private var sacredPlaceViewModel = SacredPlaceViewModel() // ใช้ load ข้อมูลสถานที่
     
     @AppStorage("loggedInEmail") private var loggedInEmail: String = ""
     @StateObject private var loc = LocationProvider() // สำหรับ LocationProvider (ถ้าจำเป็น)
-    
-    var currentMember: Member? = nil // รับ currentMember มาจากข้างนอก (ถ้ามี)
-    private var activeMember: Member? { // หา active member จาก loggedInEmail
-        currentMember ?? memberStore.members.first { $0.email.lowercased() == loggedInEmail.lowercased() }
+
+    private var activeMember: Member? { 
+        guard !flowManager.isGuestMode else { return nil }
+        return memberStore.members.first { $0.email.lowercased() == loggedInEmail.lowercased() }
     }
     
     var body: some View {
@@ -41,14 +39,15 @@ struct RecommenderForYouView: View {
                 ReligiousHolidayBanner()
                     .environmentObject(language) // ส่ง language
                 
-                // --- การ์ด "สถานที่บันทึกไว้" ---
-                BookmarkedPlacesCard(
-                    placesViewModel: sacredPlaceViewModel,
-                    bookmarkStore: bookmarkStore,
-                    flowManager: flowManager, // ส่ง flowManager
-                    loggedInEmail: loggedInEmail
-                )
-                .environmentObject(language) // ส่ง language
+                if !flowManager.isGuestMode {
+                    BookmarkedPlacesCard(
+                        placesViewModel: sacredPlaceViewModel,
+                        bookmarkStore: bookmarkStore,
+                        flowManager: flowManager,
+                        loggedInEmail: loggedInEmail
+                    )
+                    .environmentObject(language)
+                }
                 
                 // --- Hero Cards ---
                 Group {
@@ -58,43 +57,47 @@ struct RecommenderForYouView: View {
                         headingEN: "Today’s Temple",
                         memberOverride: nil, // ใช้ nil เพื่อให้ getRecommendedTemple ใช้ Date() ปัจจุบัน
                         openDetail: {
-                            // --- 👇 แก้ไขจุดที่ 3 (อันแรก) ---
-                            flowManager.navigateTo(.recommendation) // ใช้ navigateTo
-                            // --- 👆 สิ้นสุดส่วนแก้ไข ---
+                            if flowManager.isGuestMode {
+                                let temple = getRecommendedTemple(for: nil)
+                                if let place = sacredPlaceViewModel.places.first(where: { $0.nameTH == temple.nameTH || $0.nameEN == temple.nameEN }) {
+                                    flowManager.navigateTo(.sacredDetail(place: place))
+                                }
+                            } else {
+                                flowManager.navigateTo(.recommendation)
+                            }
                         }
                     )
                     .environmentObject(language)
                     .environmentObject(loc) // ส่ง LocationProvider ถ้าจำเป็น
                     
-                    // Birthday Temple Banner (ถ้ามีวันเกิด)
-                    if let heading = birthdayHeading(for: activeMember) {
-                        TempleBannerCard(
-                            headingTH: heading.th,
-                            headingEN: heading.en,
-                            memberOverride: activeMember, // ส่ง member เข้าไป
-                            openDetail: {
-                                // --- 👇 แก้ไขจุดที่ 3 (อันที่สอง) ---
-                                flowManager.navigateTo(.recommendation) // ใช้ navigateTo
-                                // --- 👆 สิ้นสุดส่วนแก้ไข ---
+                    if !flowManager.isGuestMode {
+                        // Birthday Temple Banner (ถ้า Login อยู่ และมีวันเกิด)
+                        if let member = activeMember, let heading = birthdayHeading(for: member) {
+                            TempleBannerCard(
+                                headingTH: heading.th,
+                                headingEN: heading.en,
+                                memberOverride: member, // ส่ง member เข้าไป
+                                openDetail: {
+                                    // Action เหมือน Today's Temple (ถ้า Login อยู่)
+                                    flowManager.navigateTo(.recommendation)
+                                }
+                            )
+                            .environmentObject(language)
+                            .environmentObject(loc)
+                        } else if activeMember != nil { // Login อยู่ แต่ไม่มีวันเกิดใน Profile
+                            // การ์ดแจ้งให้เพิ่มวันเกิด
+                            MissingBirthdayCard {
+                                flowManager.navigateTo(.editProfile)
                             }
-                        )
-                        .environmentObject(language)
-                        .environmentObject(loc)
-                    } else {
-                        // การ์ดแจ้งให้เพิ่มวันเกิด (ถ้าไม่มี)
-                        MissingBirthdayCard {
-                            // --- 👇 แก้ไขจุดที่ 4 ---
-                            flowManager.navigateTo(.editProfile) // ใช้ navigateTo
-                            // --- 👆 สิ้นสุดส่วนแก้ไข ---
+                            .environmentObject(language)
                         }
-                        .environmentObject(language)
+                        // ไม่ต้องมี else สำหรับ Guest เพราะเราเช็ค if !flowManager.isGuestMode ไปแล้ว
                     }
                 }
                 
                 Spacer(minLength: 12) // ใช้ Spacer แทน padding(.bottom) ที่อาจไม่เห็นผล
             }
             .padding(.vertical, 12)
-            // .padding(.horizontal, 16) // เอา padding นี้ออก เพราะใส่ใน HStack ด้านบนแล้ว
         }
         .background(Color(.systemGroupedBackground))
         // Load ข้อมูลสถานที่เมื่อ View ปรากฏ

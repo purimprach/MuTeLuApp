@@ -2,17 +2,13 @@ import SwiftUI
 
 struct MeritPointsView: View {
     @EnvironmentObject var language: AppLanguage
-    @EnvironmentObject var flowManager: MuTeLuFlowManager
-    
-    // --- vvv จุดที่แก้ไข vvv ---
-    @EnvironmentObject var activityStore: ActivityStore // ✅ เปลี่ยนมาใช้ ActivityStore
-    // --- ^^^ จุดที่แก้ไข ^^^ ---
-    
+    @EnvironmentObject var flowManager: MuTeLuFlowManager // 👈 เพิ่มเข้ามา
+    @EnvironmentObject var activityStore: ActivityStore
     @AppStorage("loggedInEmail") var loggedInEmail: String = ""
     
-    // State สำหรับเก็บประวัติ (เปลี่ยนเป็น ActivityRecord)
     @State private var userRecords: [ActivityRecord] = []
     
+    // ... (dateFormatter เหมือนเดิม) ...
     var dateFormatter: DateFormatter {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
@@ -22,64 +18,66 @@ struct MeritPointsView: View {
         return formatter
     }
     
-    // --- vvv จุดที่แก้ไข vvv ---
-    // ✅ คำนวณแต้มบุญทั้งหมดจาก ActivityStore
     var totalPoints: Int {
         activityStore.totalMeritPoints(for: loggedInEmail)
     }
-    // --- ^^^ จุดที่แก้ไข ^^^ ---
     
     var body: some View {
-        VStack(spacing: 16) {
-            BackButton()
-            VStack(spacing: 8) {
-                Text(language.localized("คะแนนแต้มบุญทั้งหมด", "Total Merit Points"))
-                    .font(.headline)
+        // --- 👇 [เพิ่ม] เช็ค Guest Mode ---
+        if flowManager.isGuestMode {
+            GuestLoginPromptView() // ใช้ View เดิมจาก ProfileView
+                .navigationTitle(language.localized("คะแนนแต้มบุญ", "Merit Points")) // ใส่ Title
+                .navigationBarTitleDisplayMode(.inline)
+        } else {
+            // --- แสดง Merit Points ปกติ (โค้ดเดิม) ---
+            VStack(spacing: 16) {
+                BackButton()
+                VStack(spacing: 8) {
+                    Text(language.localized("คะแนนแต้มบุญทั้งหมด", "Total Merit Points"))
+                        .font(.headline)
+                    
+                    Text("\(totalPoints) 🟣")
+                        .font(.system(size: 48, weight: .bold))
+                        .foregroundColor(.purple)
+                }
+                .padding(.top)
                 
-                Text("\(totalPoints) 🟣")
-                    .font(.system(size: 48, weight: .bold))
-                    .foregroundColor(.purple)
-            }
-            .padding(.top)
-            
-            if userRecords.isEmpty {
-                Spacer()
-                Text(language.localized("ยังไม่มีประวัติแต้มบุญ", "No merit history yet"))
-                    .foregroundColor(.gray)
-                Spacer()
-            } else {
-                List {
-                    // --- vvv จุดที่แก้ไข vvv ---
-                    // ✅ วนลูปจาก userRecords ที่เป็น [ActivityRecord]
-                    ForEach(userRecords) { record in
-                        // ตรวจสอบว่าเป็น activity ประเภท checkIn เท่านั้น
-                        if record.type == .checkIn {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(language.currentLanguage == "th" ? record.placeNameTH : record.placeNameEN)
-                                    .font(.headline)
-                                Text(dateFormatter.string(from: record.date))
-                                    .font(.caption)
-                                    .foregroundColor(.gray)
-                                // ใช้ optional unwrap สำหรับ meritPoints
-                                if let points = record.meritPoints {
+                if userRecords.isEmpty {
+                    Spacer()
+                    Text(language.localized("ยังไม่มีประวัติแต้มบุญ", "No merit history yet"))
+                        .foregroundColor(.gray)
+                    Spacer()
+                } else {
+                    List {
+                        ForEach(userRecords) { record in
+                            // แสดงเฉพาะ checkIn ที่มีแต้ม
+                            if record.type == .checkIn, let points = record.meritPoints, points > 0 {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(language.currentLanguage == "th" ? record.placeNameTH : record.placeNameEN)
+                                        .font(.headline)
+                                    Text(dateFormatter.string(from: record.date))
+                                        .font(.caption)
+                                        .foregroundColor(.gray)
                                     Text("+\(points) \(language.localized("แต้ม", "points"))")
                                         .font(.subheadline)
                                         .foregroundColor(.green)
                                 }
+                                .padding(.vertical, 6)
                             }
-                            .padding(.vertical, 6)
                         }
-                    }
-                    // --- ^^^ จุดที่แก้ไข ^^^ ---
-                }
+                    } // End List
+                } // End else
+            } // End VStack หลัก
+            .padding(.top)
+            .onAppear {
+                // ดึงข้อมูลจาก ActivityStore (เหมือนเดิม)
+                userRecords = activityStore.checkInRecords(for: loggedInEmail).sorted { $0.date > $1.date }
             }
-        }
-        .padding(.top)
-        .onAppear {
-            // --- vvv จุดที่แก้ไข vvv ---
-            // ✅ ดึงข้อมูลจาก ActivityStore
-            userRecords = activityStore.checkInRecords(for: loggedInEmail).sorted { $0.date > $1.date }
-            // --- ^^^ จุดที่แก้ไข ^^^ ---
-        }
-    }
-}
+            // --- 👇 [เพิ่ม] ใส่ Title ---
+            .navigationTitle(language.localized("คะแนนแต้มบุญ", "Merit Points"))
+            .navigationBarTitleDisplayMode(.inline)
+            // --- 👆 สิ้นสุด ---
+        } // End else (สำหรับ Login อยู่)
+        // --- 👆 สิ้นสุดการเช็ค ---
+    } // End body
+} // End struct

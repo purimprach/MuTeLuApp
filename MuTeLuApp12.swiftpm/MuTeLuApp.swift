@@ -10,6 +10,7 @@ struct MuTeLuApp: App {
     @StateObject var likeStore = LikeStore()
     @StateObject var bookmarkStore = BookmarkStore()
     @StateObject var activityStore = ActivityStore()
+    @StateObject var userActionStore = UserActionStore()
     
     var body: some Scene {
         WindowGroup {
@@ -22,6 +23,7 @@ struct MuTeLuApp: App {
                 .environmentObject(likeStore)
                 .environmentObject(bookmarkStore)
                 .environmentObject(activityStore)
+                .environmentObject(userActionStore)
         }
     }
 }
