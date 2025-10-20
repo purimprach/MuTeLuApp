@@ -100,6 +100,7 @@ struct MemberManagementView: View {
     @EnvironmentObject var filterStore: CheckinFilterStore
     @EnvironmentObject var activityStore: ActivityStore
     @AppStorage("loggedInEmail") private var loggedInEmail: String = ""
+    @State private var showingResetAlert = false 
     
     @State private var editingMember: Member?
     @State private var memberToDelete: Member?
@@ -186,6 +187,12 @@ struct MemberManagementView: View {
                         Button { showingAddSheet = true } label: {
                             Label(language.localized("เพิ่มสมาชิกใหม่", "Add Member"), systemImage: "person.badge.plus")
                         }
+                        Divider()
+                        Button(language.localized("ล้างข้อมูลทั้งหมด", "Reset All Data"),
+                               systemImage: "trash.circle.fill", // เพิ่ม Icon
+                               role: .destructive) { // ทำให้เป็นสีแดง
+                            showingResetAlert = true // แสดง Alert
+                        }
                     } label: { Image(systemName: "ellipsis.circle").imageScale(.large) }
                 }
             }
@@ -228,9 +235,41 @@ struct MemberManagementView: View {
             } message: {
                 Text(language.localized("คุณต้องการออกจากระบบผู้ดูแลหรือไม่?", "Are you sure you want to log out from the admin system?"))
             }
-            // --- 👆 สิ้นสุดส่วนแก้ไข Alert ---
+            // --- 👇 [เพิ่ม] Alert สำหรับ Reset UserDefaults ---
+            .alert(language.localized("ยืนยันการล้างข้อมูล", "Confirm Data Reset"), isPresented: $showingResetAlert) {
+                Button(language.localized("ยืนยันล้างข้อมูล", "Confirm Reset"), role: .destructive) {
+                    resetUserDefaults() // เรียกฟังก์ชันล้างข้อมูล
+                }
+                Button(language.localized("ยกเลิก", "Cancel"), role: .cancel) {}
+            } message: {
+                Text(language.localized("การดำเนินการนี้จะลบข้อมูลผู้ใช้และกิจกรรมทั้งหมด ไม่สามารถกู้คืนได้!", "This action will delete all user and activity data and cannot be undone!"))
+            }
         }
     }
+    // --- 👇 [แก้ไข] ฟังก์ชัน resetUserDefaults() ---
+    @MainActor // <--- เพิ่ม @MainActor ให้ฟังก์ชันนี้ด้วย
+    func resetUserDefaults() {
+        print("⚠️ กำลังล้าง UserDefaults และข้อมูลในหน่วยความจำ...")
+        if let bundleID = Bundle.main.bundleIdentifier {
+            UserDefaults.standard.removePersistentDomain(forName: bundleID)
+            print("✅ UserDefaults สำหรับ \(bundleID) ถูกล้างแล้ว")
+        } else {
+            print("❌ ไม่สามารถหา Bundle Identifier ได้")
+        }
+        UserDefaults.standard.synchronize()
+        
+        Task {
+            await MainActor.run { // ทำให้แน่ใจว่ารันบน Main Thread
+                // เรียก method บน activityStore และ memberStore โดยตรง
+                activityStore.activities.removeAll()
+                memberStore.members.removeAll()
+                loggedInEmail = "" // เคลียร์ค่า AppStorage (ตัวนี้ควรทำได้โดยตรง)
+                print("✅ ล้างข้อมูลในหน่วยความจำของ Stores เสร็จสิ้น")
+            }
+        }
+        // --- 👆 สิ้นสุด ---
+    }
+    // --- 👆 สิ้นสุดการแก้ไขฟังก์ชัน ---
 }
 
 // MARK: - MemberCard (เหมือนเดิม)

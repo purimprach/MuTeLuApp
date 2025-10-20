@@ -19,7 +19,6 @@ struct MainMenuView: View {
     var body: some View {
         ScrollView {
             LazyVStack(spacing: 16) {
-                // --- 👇 [แก้ไข] ส่ง currentMember ให้ GreetingHeaderCardPro ---
                 GreetingHeaderCardPro(
                     member: currentMember, // ส่ง member? (อาจเป็น nil)
                     subtitle: language.localized("ยินดีต้อนรับ", "Welcome"), // เปลี่ยน Subtitle กลางๆ
@@ -28,6 +27,21 @@ struct MainMenuView: View {
                     onProfile: {} // Action นี้อาจจะไม่จำเป็นแล้ว
                 )
                 .environmentObject(language)
+                // ✅ ปุ่มไปหน้า Login ถ้าเป็น Guest
+                if flowManager.isGuestMode {
+                    Button {
+                        flowManager.exitGuestMode() // ใช้ไปหน้า Login
+                    } label: {
+                        Text(language.localized("เข้าสู่ระบบ / สมัครสมาชิก", "Login / Register"))
+                            .font(.headline)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.purple.opacity(0.9))
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                    }
+                    .padding(.horizontal)
+                }
                 // --- 👆 สิ้นสุด ---
                 
                 BannerStack(showBanner: $showBanner, currentMember: currentMember)
@@ -51,92 +65,112 @@ struct MainMenuView: View {
 }
 
 // MARK: - GreetingHeaderCardPro (แก้ไขสำหรับ Guest + Alert)
+// MARK: - GreetingHeaderCardPro (แก้สีซีด)
 struct GreetingHeaderCardPro: View {
     @EnvironmentObject var language: AppLanguage
     @EnvironmentObject var flowManager: MuTeLuFlowManager
+    
     var member: Member?
     var subtitle: String
     var meritPoints: Int = 0
-    var onProfile: () -> Void
+    var onProfile: () -> Void = {}
     
-    // --- 👇 [เพิ่ม] State สำหรับควบคุม Alert ---
-    @State private var showLoginPromptAlert = false
-    // --- 👆 สิ้นสุด ---
-    
+    @State private var wave = false
     private var isGuest: Bool { member == nil }
-    private var displayName: String { /* ... (เหมือนเดิม) ... */
-        isGuest ? language.localized("ผู้ใช้ทั่วไป", "Guest User") : (member?.fullName.isEmpty == false ? member!.fullName : (member?.email ?? ""))
+    private var displayName: String {
+        isGuest ? language.localized("ผู้ใช้ทั่วไป", "Guest User")
+        : (member?.fullName.isEmpty == false ? member!.fullName : (member?.email ?? ""))
     }
-    private var displaySubtitle: String { /* ... (เหมือนเดิม) ... */
-        isGuest ? language.localized("แตะเพื่อเข้าสู่ระบบ/สมัครสมาชิก", "Tap to Login / Register") : subtitle // <--- ปรับข้อความ Subtitle
-    }
-    private var initials: String { /* ... (เหมือนเดิม) ... */
-        isGuest ? "G" : (member?.email ?? "?").emailInitials
-    }
+    private var initials: String { isGuest ? "G" : (member?.email ?? "?").emailInitials }
     
     var body: some View {
-        Button {
-            if isGuest {
-                // --- 👇 [แก้ไข] แสดง Alert แทนการ Navigate ---
-                // flowManager.exitGuestMode() // <--- เอาออก
-                showLoginPromptAlert = true // <--- เพิ่มบรรทัดนี้
-                // --- 👆 สิ้นสุด ---
-            } else {
-                // Action สำหรับ User ที่ Login แล้ว (Optional)
-            }
-        } label: {
-            ZStack {
-                // ... (Background Gradient และ Circles เหมือนเดิม) ...
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(LinearGradient(colors: [.purple.opacity(0.95), .indigo.opacity(0.9)],
-                                         startPoint: .topLeading, endPoint: .bottomTrailing))
-                Circle().fill(Color.white.opacity(0.12)).frame(width: 160, height: 160).blur(radius: 20).offset(x: 140, y: -50)
-                Circle().fill(Color.black.opacity(0.12)).frame(width: 120, height: 120).blur(radius: 18).offset(x: -140, y: 60)
-                
-                VStack(alignment: .leading, spacing: 14) {
-                    HStack(alignment: .top, spacing: 12) {
-                        // Avatar
-                        ZStack {
-                            Circle().fill(LinearGradient(colors: [.blue, .orange], startPoint: .topLeading, endPoint: .bottomTrailing))
-                            Text(initials).font(.headline.bold()).foregroundStyle(.white)
-                        }
-                        .frame(width: 56, height: 56)
-                        .overlay(Circle().stroke(.white.opacity(0.8), lineWidth: 2))
-                        
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(displayName).font(.title3.weight(.bold)).foregroundStyle(.white)
-                            Text(displaySubtitle).font(.subheadline).foregroundStyle(.white.opacity(0.8)) // แสดง Subtitle ที่แก้แล้ว
-                        }
-                        Spacer()
+        ZStack {
+            // ✅ ใช้ gradient ทึบ (ไม่ใช้ material) เพื่อให้เข้มเสมอ
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(
+                    LinearGradient(colors: [.purple, .indigo],
+                                   startPoint: .topLeading,
+                                   endPoint: .bottomTrailing)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(.white.opacity(0.12), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.2), radius: 10, y: 6)
+            
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .top, spacing: 12) {
+                    // Avatar
+                    ZStack {
+                        Circle().fill(LinearGradient(colors: [.blue, .orange],
+                                                     startPoint: .topLeading,
+                                                     endPoint: .bottomTrailing))
+                        Text(initials).font(.headline.bold()).foregroundStyle(.white)
                     }
-                    // Pills (แสดงเฉพาะตอน Login)
-                    if !isGuest {
+                    .frame(width: 56, height: 56)
+                    .overlay(Circle().stroke(.white.opacity(0.8), lineWidth: 2))
+                    
+                    VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 8) {
-                            if let email = member?.email, !email.isEmpty {
-                                Pill(icon: "envelope.fill", text: email, bg: .black).lineLimit(1).truncationMode(.middle)
-                            }
-                            Pill(icon: "star.fill", text: language.localized("แต้มบุญ", "Merit") + " \(meritPoints)", bg: .orange)
+                            Text(timeGreeting())
+                                .font(.title3.weight(.bold))
+                                .foregroundStyle(.white)
+                            Text("👋")
+                                .rotationEffect(.degrees(wave ? 15 : -10), anchor: .bottomLeading)
+                                .animation(.easeInOut(duration: 1)
+                                    .repeatForever(autoreverses: true), value: wave)
                         }
+                        
+                        Text(displayName)
+                            .font(.headline)
+                            .foregroundStyle(.white.opacity(0.92))
+                        
+                        Text(isGuest ? language.localized("กำลังใช้งานในโหมด Guest", "Currently in Guest Mode") : subtitle)
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.8))
+                    }
+                    Spacer()
+                }
+                
+                // Pills เฉพาะตอนล็อกอิน
+                if !isGuest {
+                    HStack(spacing: 8) {
+                        if let email = member?.email, !email.isEmpty {
+                            pill(icon: "envelope.fill", text: email)
+                                .lineLimit(1).truncationMode(.middle)
+                        }
+                        pill(icon: "star.fill",
+                             text: language.localized("แต้มบุญ", "Merit") + " \(meritPoints)")
                     }
                 }
-                .padding(16)
-            } // End ZStack
-            .overlay(/* ... Stroke ... */ RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(.white.opacity(0.08), lineWidth: 1))
-            .shadow(/* ... Shadow ... */ color: .black.opacity(0.12), radius: 10, y: 6)
-            .padding(.horizontal)
-        }
-        .buttonStyle(.plain)
-        .disabled(!isGuest) // กดได้เฉพาะ Guest
-        // --- 👇 [เพิ่ม] Alert Modifier ---
-        .alert(language.localized("เข้าสู่ระบบ / สมัครสมาชิก", "Login / Register"), isPresented: $showLoginPromptAlert) {
-            Button(language.localized("ไปที่หน้า Login", "Go to Login")) {
-                flowManager.exitGuestMode() // เรียก Action ที่จะพาไปหน้า Login
             }
-            Button(language.localized("ยกเลิก", "Cancel"), role: .cancel) {}
-        } message: {
-            Text(language.localized("คุณต้องการไปที่หน้าเข้าสู่ระบบหรือสมัครสมาชิกหรือไม่?", "Do you want to go to the login or registration page?"))
+            .padding(16)
         }
-        // --- 👆 สิ้นสุด ---
+        .padding(.horizontal)
+        .onAppear { wave = true }
+        .buttonStyle(.plain)
+    }
+    
+    private func pill(icon: String, text: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+                .symbolRenderingMode(.palette)
+                .foregroundStyle(.white, .white.opacity(0.4))
+            Text(text).foregroundStyle(.white).font(.footnote.weight(.semibold))
+        }
+        .padding(.horizontal, 10).padding(.vertical, 6)
+        .background(.black.opacity(0.25))
+        .clipShape(Capsule())
+    }
+    
+    private func timeGreeting() -> String {
+        let h = Calendar.current.component(.hour, from: Date())
+        switch h {
+        case 5..<12:  return "สวัสดีตอนเช้า"
+        case 12..<16: return "สวัสดีตอนบ่าย"
+        case 16..<20: return "สวัสดีตอนเย็น"
+        default:      return "สวัสดี"
+        }
     }
 }
 // MARK: - PlaceSection (รวม NearYou + TopReviews - แก้ไข Subtitle IL)

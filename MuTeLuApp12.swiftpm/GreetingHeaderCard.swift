@@ -4,11 +4,10 @@ struct GreetingHeaderCard: View {
     @Environment(\.colorScheme) private var scheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
-    // ส่งเข้ามาเป็น Optional ได้
     let displayName: String?
     let displayEmail: String?
-    let guestName: String              // เช่น "ผู้ใช้รับเชิญ"
-    let subtitle: String?              // เช่น "ยินดีต้อนรับกลับ" (อยากไม่ใช้ ส่ง nil ได้)
+    let guestName: String
+    let subtitle: String?
     
     @State private var wave = false
     
@@ -18,85 +17,78 @@ struct GreetingHeaderCard: View {
         return (displayName?.isEmpty == false ? displayName! : guestName)
     }
     private var initial: String {
-        if isGuest { return "G" } // กรณีผู้ใช้รับเชิญ
+        if isGuest { return "G" }
         let base = (displayEmail ?? displayName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         return base.first.map { String($0).uppercased() } ?? "?"
     }
     
     var body: some View {
         ZStack {
-            // glass card + stroke + shadow
+            // ✅ เปลี่ยนจาก .ultraThinMaterial เป็น gradient เข้ม (แก้ปัญหาสีซีด)
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(.ultraThinMaterial)
+                .fill(
+                    LinearGradient(
+                        colors: [.purple, .indigo],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
                 .overlay(
                     RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(LinearGradient(
-                            colors: scheme == .dark
-                            ? [Color.white.opacity(0.12), Color.white.opacity(0.02)]
-                            : [Color.black.opacity(0.06), Color.black.opacity(0.02)],
-                            startPoint: .topLeading, endPoint: .bottomTrailing
-                        ), lineWidth: 1)
-                ).frame(maxWidth:600)
-                .shadow(color: .black.opacity(scheme == .dark ? 0.24 : 0.14),
-                        radius: scheme == .dark ? 12 : 18, x: 0, y: 8)
+                        .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.25), radius: 12, x: 0, y: 6)
+                .frame(maxWidth: 600)
             
             HStack(spacing: 14) {
-                // Avatar = ตัวแรกของอีเมล (หรือ G ถ้า guest)
                 Circle()
-                    .fill(LinearGradient(colors: [Color.purple, Color.blue],
-                                         startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .fill(
+                        LinearGradient(colors: [.blue, .orange], startPoint: .topLeading, endPoint: .bottomTrailing)
+                    )
                     .frame(width: 56, height: 56)
                     .overlay(
                         Text(initial)
-                            .font(.title2.weight(.bold))
+                            .font(.title.bold())
                             .foregroundColor(.white)
                     )
                 
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(spacing: 8) {
-                        // “สวัสดีตอน…นะ [ชื่อ]”
-                        Text("\(timeGreeting())")
-                            .font(.system(size: 26, weight: .heavy, design: .rounded))
-                            .foregroundStyle(LinearGradient(colors: [.purple, .pink, .orange],
-                                                            startPoint: .leading, endPoint: .trailing))
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(timeGreeting())
+                            .font(.title3.bold())
+                            .foregroundColor(.white)
                         
                         Text("👋")
-                            .font(.system(size: 30))
-                            .rotationEffect(.degrees(wave ? 18 : -6), anchor: .bottomLeading)
-                            .animation(reduceMotion ? nil :
-                                    .easeInOut(duration: 1.2).repeatForever(autoreverses: true),
-                                       value: wave)
+                            .rotationEffect(.degrees(wave ? 15 : -10), anchor: .bottomLeading)
+                            .animation(.easeInOut(duration: 1).repeatForever(autoreverses: true), value: wave)
                     }
                     
-                    // แสดงอีเมลถ้ามี
-                        Text("\(effectiveName)")
-                        .font(.system(size: 18, weight: .heavy, design: .rounded))
-                        .foregroundStyle(LinearGradient(colors: [.blue, .brown],
-                                                        startPoint: .leading, endPoint: .trailing))
+                    Text(effectiveName)
+                        .font(.headline)
+                        .foregroundColor(.white.opacity(0.9))
                     
-                    
-                    
-                    // แสดง subtitle ถ้ามี
-                    if let subtitle {
+                    if let subtitle = subtitle {
                         Text(subtitle)
                             .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .foregroundColor(.white.opacity(0.8))
                     }
                 }
+                
+                Spacer()
             }
             .padding()
         }
+        .padding(.horizontal)
         .onAppear { wave = true }
     }
     
-    // MARK: - Helpers
     private func timeGreeting() -> String {
         let h = Calendar.current.component(.hour, from: Date())
         switch h {
-        case 5..<12:  return "สวัสดีตอนเช้า"
+        case 5..<12: return "สวัสดีตอนเช้า"
         case 12..<16: return "สวัสดีตอนบ่าย"
         case 16..<20: return "สวัสดีตอนเย็น"
-        default:      return "สวัสดี"
+        default: return "สวัสดี"
         }
     }
 }
