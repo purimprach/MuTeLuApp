@@ -6,6 +6,7 @@ struct SacredPlaceDetailView: View {
     @EnvironmentObject var language: AppLanguage
     @EnvironmentObject var flowManager: MuTeLuFlowManager // มีอยู่แล้ว
     @EnvironmentObject var locationManager: LocationManager
+    @EnvironmentObject var memberStore: MemberStore // เพิ่มบรรทัดนี้
     @State private var showDetailSheet = false
     @State private var showContactOptions = false
     @State private var showCheckinAlert = false
@@ -40,6 +41,7 @@ struct SacredPlaceDetailView: View {
                                     flowManager.requireLogin() // บังคับ Login ถ้าเป็น Guest
                                 } else {
                                     // ทำ Action ปกติ
+                                    memberStore.toggleLike(for: loggedInEmail, place: place)
                                     bookmarkStore.toggleBookmark(placeID: place.id.uuidString, for: loggedInEmail)
                                     // อ่านค่าล่าสุดหลัง toggle
                                     let nowBookmarked = bookmarkStore.isBookmarked(placeID: place.id.uuidString, by: loggedInEmail)
