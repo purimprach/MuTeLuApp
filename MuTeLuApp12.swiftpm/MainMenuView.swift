@@ -115,10 +115,10 @@ struct GreetingHeaderCardPro: View {
                                 .foregroundStyle(.white.opacity(0.8))
 
                             if isGuest {
-                                Button(language.localized("เข้าสู่ระบบ", "sign in")) {
+                                Button(language.localized("เข้าสู่ระบบ", "Login")) {
                                     showLoginPromptAlert = true
                                 }
-                                .font(.subheadline.weight(.bold))
+                                .font(.title3.weight(.bold))
                                 .foregroundColor(.yellow)
                                 .underline()
                             }
@@ -158,10 +158,10 @@ struct GreetingHeaderCardPro: View {
     private func timeGreeting() -> String {
         let h = Calendar.current.component(.hour, from: Date())
         switch h {
-        case 5..<12:  return "สวัสดีตอนเช้า"
-        case 12..<16: return "สวัสดีตอนบ่าย"
-        case 16..<20: return "สวัสดีตอนเย็น"
-        default:      return "สวัสดี"
+        case 5..<12:  return language.localized("สวัสดีตอนเช้า", "Good Morning")
+        case 12..<16: return language.localized("สวัสดีตอนบ่าย", "Good Afternoon")
+        case 16..<20: return language.localized("สวัสดีตอนเย็น", "Good Evening")
+        default:      return language.localized("สวัสดี", "Hello") // หรือ "Good Night" ถ้าต้องการ
         }
     }
 }
