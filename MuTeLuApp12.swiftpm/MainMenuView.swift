@@ -75,23 +75,14 @@ struct GreetingHeaderCardPro: View {
     }
     
     var body: some View {
-        Button {
-            if isGuest {
-                // --- 👇 [แก้ไข] แสดง Alert แทนการ Navigate ---
-                // flowManager.exitGuestMode() // <--- เอาออก
-                showLoginPromptAlert = true // <--- เพิ่มบรรทัดนี้
-                // --- 👆 สิ้นสุด ---
-            } else {
-                // Action สำหรับ User ที่ Login แล้ว (Optional)
-            }
-        } label: {
+        VStack(spacing: 0) {
             ZStack {
                 // ... (Background Gradient และ Circles เหมือนเดิม) ...
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
                     .fill(LinearGradient(colors: [.purple.opacity(0.95), .indigo.opacity(0.9)],
                                          startPoint: .topLeading, endPoint: .bottomTrailing))
-                Circle().fill(Color.white.opacity(0.12)).frame(width: 160, height: 160).blur(radius: 20).offset(x: 140, y: -50)
-                Circle().fill(Color.black.opacity(0.12)).frame(width: 120, height: 120).blur(radius: 18).offset(x: -140, y: 60)
+                Circle().fill(Color.white.opacity(0.03)).frame(width: 160, height: 160).blur(radius: 20).offset(x: 140, y: -50)
+                Circle().fill(Color.black.opacity(0.03)).frame(width: 120, height: 120).blur(radius: 18).offset(x: -140, y: 60)
                 
                 VStack(alignment: .leading, spacing: 14) {
                     HStack(alignment: .top, spacing: 12) {
@@ -102,10 +93,36 @@ struct GreetingHeaderCardPro: View {
                         }
                         .frame(width: 56, height: 56)
                         .overlay(Circle().stroke(.white.opacity(0.8), lineWidth: 2))
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack(spacing: 8) {
+                                Text(timeGreeting()).font(.title3.weight(.bold).foregroundStyle(.white)
+                                Text("👋").rotationEffect(.degree(wave ? 15: -10), anchor: .bottomLeading)
+                                .animation(.easeInOut(duration: 1).repeatForever(autoreverses: true), value: wave)
+                            }
+
+                            Text(displayName)
+                                .font(.headline)
+                                .foregroundStyle(.white.opacity(0.92))
+                            
+                            Text( isGuest ? language.localized("กำลังใช้งานในโหมด Guest", "Currently in Guest Mode") : subtitle)
+                                .font(.subheadline)
+                                .foregroundStyle(.white.opacity(0.8))
+                        }
+                        Spacer()
                         
                         VStack(alignment: .leading, spacing: 4) {
                             Text(displayName).font(.title3.weight(.bold)).foregroundStyle(.white)
-                            Text(displaySubtitle).font(.subheadline).foregroundStyle(.white.opacity(0.8)) // แสดง Subtitle ที่แก้แล้ว
+                            if isGuest {
+                                Button(language.localized("เข้าสู่ระบบที่นี่", "Login Here")) {
+                                    showLoginPromptAlert = true
+                                }
+                                .font(.subheadline.weight(.medium))
+                                .foregroundColor(.white.opacity(0.9))
+                                .underline()
+                            } else {
+                                Text(displaySubtitle).font(.subheadline).foregroundStyle(.white.opacity(0.8))
+                            }
                         }
                         Spacer()
                     }
@@ -125,8 +142,6 @@ struct GreetingHeaderCardPro: View {
             .shadow(/* ... Shadow ... */ color: .black.opacity(0.12), radius: 10, y: 6)
             .padding(.horizontal)
         }
-        .buttonStyle(.plain)
-        .disabled(!isGuest) // กดได้เฉพาะ Guest
         // --- 👇 [เพิ่ม] Alert Modifier ---
         .alert(language.localized("เข้าสู่ระบบ / สมัครสมาชิก", "Login / Register"), isPresented: $showLoginPromptAlert) {
             Button(language.localized("ไปที่หน้า Login", "Go to Login")) {
@@ -273,7 +288,7 @@ private struct Pill: View {
         HStack(spacing: 6) {
             Image(systemName: icon).symbolRenderingMode(.palette).foregroundStyle(.white, .white.opacity(0.4))
             Text(text).foregroundStyle(.white).font(.footnote.weight(.semibold))
-        }.padding(.horizontal, 10).padding(.vertical, 6).background(bg.opacity(0.25)).clipShape(Capsule())
+        }.padding(.horizontal, 10).padding(.vertical, 6).background(bg.opacity(0.01)).clipShape(Capsule())
     }
 }
 
