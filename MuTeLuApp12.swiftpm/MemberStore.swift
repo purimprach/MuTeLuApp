@@ -110,5 +110,18 @@ class MemberStore: ObservableObject {
         }
         return member.likedPlaceIDs.contains(placeID)
     }
+    /// ✅ [เพิ่มใหม่] อัปเดต tagScores จากการ Check-in
+    func recordCheckInAndUpdateTags(email: String, place: SacredPlace, scorePerTag: Int = 2) { // กำหนดคะแนนเริ่มต้นสำหรับ Check-in (อาจปรับได้)
+        guard let idx = members.firstIndex(where: { $0.email.caseInsensitiveCompare(email) == .orderedSame }) else { return }
+        
+        print("Updating tagScores for \(email) from check-in at \(place.nameTH) (\(place.tags))")
+        
+        for tag in place.tags {
+            // เพิ่มคะแนนสำหรับแต่ละ Tag ของสถานที่ที่ Check-in
+            members[idx].tagScores[tag, default: 0] += scorePerTag
+        }
+        // ไม่ต้องเรียก saveMembers() ซ้ำ เพราะ didSet ของ members จะจัดการให้เอง
+        print("Updated tagScores: \(members[idx].tagScores)")
+    }
 }
 

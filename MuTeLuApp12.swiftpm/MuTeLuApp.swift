@@ -11,6 +11,7 @@ struct MuTeLuApp: App {
     @StateObject var activityStore = ActivityStore()
     @StateObject var userActionStore = UserActionStore()
     @StateObject var sacredPlaceViewModel = SacredPlaceViewModel()
+    @StateObject var notificationStore = NotificationStore()
     
     var body: some Scene {
         WindowGroup {
@@ -24,6 +25,7 @@ struct MuTeLuApp: App {
                 .environmentObject(activityStore)
                 .environmentObject(userActionStore)
                 .environmentObject(sacredPlaceViewModel)
+                .environmentObject(notificationStore)
         }
     }
 }

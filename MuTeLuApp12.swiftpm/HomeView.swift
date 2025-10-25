@@ -9,6 +9,7 @@ struct HomeView: View {
     @EnvironmentObject var memberStore: MemberStore
     @EnvironmentObject var locationManager: LocationManager
     @EnvironmentObject var activityStore: ActivityStore 
+    @EnvironmentObject var notificationStore: NotificationStore
     
     @AppStorage("loggedInEmail") private var loggedInEmail: String = ""
     
@@ -56,7 +57,11 @@ struct HomeView: View {
             .tabItem { Label(language.localized("หน้าหลัก", "Home"), systemImage: "house") }
             .tag(HomeTab.home)
             
-            NotificationView() // (อาจจะต้องจำกัดฟีเจอร์ข้างใน View นี้ทีหลัง ถ้าจำเป็น)
+            NotificationView() // <-- แก้ไขตรงนี้
+                .environmentObject(language) // ส่ง EnvironmentObjects ที่จำเป็น
+                .environmentObject(flowManager)
+                .environmentObject(notificationStore) // ต้องส่ง notificationStore ด้วย
+                .environmentObject(sacredPlaceViewModel) // ส่ง ViewModel ด้วย
                 .tabItem { Label(language.localized("การแจ้งเตือน", "Notifications"), systemImage: "bell") }
                 .tag(HomeTab.notifications)
             
@@ -193,14 +198,4 @@ struct HomeView: View {
         return (nearest, topRated)
     }
 }
-
-// Struct NotificationView (ย้ายไปไฟล์แยก หรือไว้ข้างนอก struct HomeView)
-struct NotificationView: View {
-    var body: some View {
-        Text("Notification Screen")
-            .font(.headline)
-            .foregroundStyle(.secondary)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color(.systemGroupedBackground))
-    }
-}
+ 

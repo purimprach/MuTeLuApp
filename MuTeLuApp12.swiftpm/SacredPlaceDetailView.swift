@@ -41,7 +41,6 @@ struct SacredPlaceDetailView: View {
                                     flowManager.requireLogin() // บังคับ Login ถ้าเป็น Guest
                                 } else {
                                     // ทำ Action ปกติ
-                                    memberStore.toggleLike(for: loggedInEmail, place: place)
                                     bookmarkStore.toggleBookmark(placeID: place.id.uuidString, for: loggedInEmail)
                                     // อ่านค่าล่าสุดหลัง toggle
                                     let nowBookmarked = bookmarkStore.isBookmarked(placeID: place.id.uuidString, by: loggedInEmail)
@@ -76,6 +75,7 @@ struct SacredPlaceDetailView: View {
                                     flowManager.requireLogin() // บังคับ Login ถ้าเป็น Guest
                                 } else {
                                     // ทำ Action ปกติ
+                                    memberStore.toggleLike(for: loggedInEmail, place: place)
                                     likeStore.toggleLike(placeID: place.id.uuidString, for: loggedInEmail)
                                     // อ่านค่าล่าสุดหลัง toggle
                                     let nowLiked = likeStore.isLiked(placeID: place.id.uuidString, by: loggedInEmail)
@@ -225,6 +225,7 @@ struct SacredPlaceDetailView: View {
                                         meritPoints: 15 // กำหนดแต้มที่นี่
                                     )
                                     activityStore.addActivity(newActivity)
+                                    memberStore.recordCheckInAndUpdateTags(email: loggedInEmail, place: place)
                                     showCheckinAlert = true
                                     refreshTrigger = UUID() // ทำให้ UI รีเฟรช
                                     startCountdownTimer() // เริ่มนับ Cooldown หลัง Check-in สำเร็จ
@@ -318,7 +319,7 @@ struct SacredPlaceDetailView: View {
         }
         let placeLocation = CLLocation(latitude: place.latitude, longitude: place.longitude)
         // ระยะทดสอบ 50 km, ระยะจริงอาจจะ 100-500 เมตร
-        return userLocation.distance(from: placeLocation) < 50000 // 50 km for testing
+        return userLocation.distance(from: placeLocation) < 1000 //
     }
     
     func openInMaps() {

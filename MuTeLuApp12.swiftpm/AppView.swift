@@ -11,6 +11,7 @@ struct AppView: View {
     @EnvironmentObject var bookmarkStore: BookmarkStore
     @EnvironmentObject var activityStore: ActivityStore
     @EnvironmentObject var sacredPlaceViewModel: SacredPlaceViewModel
+    @EnvironmentObject var notificationStore: NotificationStore
     
     private var activeMember: Member? {
         memberStore.members.first { $0.email == loggedInEmail }
@@ -72,6 +73,7 @@ struct AppView: View {
     let mockBookmarkStore = BookmarkStore()
     let mockUserActionStore = UserActionStore() 
     let mockSacredPlaceViewModel = SacredPlaceViewModel()
+    let mockNotificationStore = NotificationStore()
     
     return AppView()
         .environmentObject(mockFlowManager)
@@ -83,4 +85,5 @@ struct AppView: View {
         .environmentObject(mockBookmarkStore)
         .environmentObject(mockUserActionStore)
         .environmentObject(mockSacredPlaceViewModel)
+        .environmentObject(mockNotificationStore)
 }
